@@ -1,6 +1,11 @@
 """Label-free consistency checks of the loader on any split."""
 import sys, os, re, pickle
 import pandas as pd
+
+from _console import setup_io
+
+setup_io()
+
 import os as _os
 # repo root (folder holding Train/ and datamate/); override with DATAMATE_ROOT
 ROOT = _os.environ.get("DATAMATE_ROOT") or _os.path.dirname(_os.path.dirname(

@@ -1,4 +1,9 @@
 import sys, os, builtins
+
+from _console import setup_io
+
+setup_io()
+
 import os as _os
 # repo root (folder holding Train/ and datamate/); override with DATAMATE_ROOT
 ROOT = _os.environ.get("DATAMATE_ROOT") or _os.path.dirname(_os.path.dirname(

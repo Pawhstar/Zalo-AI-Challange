@@ -1,6 +1,10 @@
 """Build datamate/policy.json: tags answered on the test set.
 usage: python make_policy.py dump_raw.jsonl THR MIN_N"""
 import json, sys, collections
+
+from _console import setup_io
+
+setup_io()
 dump, thr, min_n = sys.argv[1], float(sys.argv[2]), int(sys.argv[3])
 s = collections.defaultdict(lambda: [0, 0])
 for l in open(dump, encoding="utf-8"):
