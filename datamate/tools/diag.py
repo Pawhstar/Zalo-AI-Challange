@@ -39,7 +39,7 @@ split = sys.argv[1]
 base = f"{ROOT}/Train/{split}/data"
 cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bizcache_" + split)
 os.makedirs(cache, exist_ok=True)
-pos = [a for a in sys.argv[2:] if a != "--rebuild"]
+pos = [a for a in sys.argv[2:] if not a.startswith("--")]
 rebuild = "--rebuild" in sys.argv
 shops = pos or sorted(os.listdir(base))
 
@@ -93,9 +93,12 @@ def _person_key(name):
     differ only in how they are written are the same customer; a different
     letter or a different digit is a different customer. Digits are compared
     as a digit sequence, so '0327988481' and '0327 988 481' match."""
-    s = re.sub(r"[^a-z0-9]+", " ", fold(name)).strip()
+    s = fold(name)
+    s = re.sub(r"[\(\)\[\]\-\.,:;'\"]", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
     digits = re.sub(r"\D", "", s)
     letters = re.sub(r"\s+", " ", re.sub(r"\d", "", s)).strip()
+    # a name that carries a phone number and one that does not are different
     return letters + "|" + digits
 
 
@@ -206,17 +209,20 @@ def check_m3_units(b):
 def check_m4_customers(b):
     """Customer identity: rulebook §3.
 
-    A shop WITH customer codes: each code is one customer. A shop WITHOUT
-    codes: the name on the order identifies the customer, and two names that
-    differ only in how they are written are the same customer. The loader
-    groups by the raw name, so spellings that differ only by punctuation,
-    spaces in the phone number, letter case or accents are counted as
-    different customers."""
+    A shop WITH customer codes: each code is one customer, and two codes with
+    the same name are two different customers - nothing to merge. A shop
+    WITHOUT codes: the name on the order identifies the customer, and two
+    names that differ only in how they are written are the same customer.
+    The loader groups by the raw name, so spellings that differ only by
+    punctuation, spaces inside the phone number, letter case or accents are
+    counted as different customers."""
     O = b.orders
     if len(O) == 0 or "customer" not in O.columns:
         return []
     has_code = "customer_id" in O.columns and \
         (O["customer_id"].fillna("").astype(str) != "").mean() > 0.05
+    if has_code:
+        return []                      # codes decide identity: nothing to merge
     names = O["customer"].fillna("").astype(str)
     names = names[names != ""]
     f = names.map(fold)
@@ -224,37 +230,65 @@ def check_m4_customers(b):
     # names that are just numbers are a column mis-mapping, not a spelling issue
     notnum = ~names.map(lambda s: re.fullmatch(r"[0-9.,\s]+", s) is not None)
     names = names[notnum]
-    kind = "codes present" if has_code else "NO codes"
     if len(names) == 0:
-        return [("M4", f"no customer names at all ({kind})")]
+        return [("M4", "no customer names at all (NO codes)")]
     df = pd.DataFrame({"raw": names})
     df["k"] = df["raw"].map(_person_key)
-    if "customer_id" in O.columns:
-        df["cid"] = O["customer_id"].fillna("").astype(str).reindex(names.index).values
     n_raw = df["raw"].nunique()
     n_person = df["k"].nunique()
     multi = df.groupby("k")["raw"].nunique()
     multi = multi[multi > 1]
-    if has_code:
-        # codes decide identity: only flag names split across several codes
-        if "cid" in df.columns:
-            split = df.groupby("raw")["cid"].nunique()
-            n_split = int((split > 1).sum())
-            if n_split:
-                ex = list(split[split > 1].index)[:2]
-                return [("M4", f"{n_split} names carry >1 customer code ({n_raw} names, {kind}): {ex}")]
-        return [("M4", f"customer codes decide identity; {n_raw} names, "
-                       f"{len(multi)} people written >1 way but codes disambiguate")]
-    # no codes: the name is the identity
     if n_raw == n_person:
-        return [("M4", f"{n_raw} distinct customers, all written consistently ({kind})")]
+        return [("M4", f"{n_raw} distinct customers, all written consistently (NO codes)")]
     ex = []
     for k in list(multi.index)[:2]:
         variants = sorted(set(df.loc[df["k"] == k, "raw"]))
         ex.append(" / ".join(variants[:3]))
-    return [("M4", f"{n_raw} written customer names collapse to {n_person} people "
-                   f"({kind}); {len(multi)} people have >1 spelling, e.g. "
-                   + " ; ".join(ex))]
+    return [("M4", f"{n_raw} written customer names collapse to {n_person} people (NO codes); "
+                   f"{len(multi)} people have >1 spelling, e.g. " + " ; ".join(ex))]
+
+
+def print_customer_pairs(bid):
+    """Print the customer names that are merged and the near-duplicates that
+    are NOT merged, so a human can check the normalisation key."""
+    b = load_business(bid)
+    O = b.orders
+    if len(O) == 0 or "customer" not in O.columns:
+        return
+    has_code = "customer_id" in O.columns and \
+        (O["customer_id"].fillna("").astype(str) != "").mean() > 0.05
+    print(f"\n=== {bid}: customer name pairs "
+          f"({'HAS codes - nothing merged' if has_code else 'NO codes'})")
+    names = O["customer"].fillna("").astype(str)
+    names = names[names != ""]
+    f = names.map(fold)
+    names = names[~f.isin(_WALKIN)]
+    names = names[~names.map(lambda s: re.fullmatch(r"[0-9.,\s]+", s) is not None)]
+    if len(names) == 0:
+        print("  (no names)")
+        return
+    df = pd.DataFrame({"raw": names})
+    df["k"] = df["raw"].map(_person_key)
+    g = df.groupby("k")["raw"].unique()
+    merged = [(k, sorted(v)) for k, v in g.items() if len(v) > 1]
+    print(f"-- MERGED pairs (same key, different spelling): {len(merged)} groups")
+    for k, v in merged[:10]:
+        print("   " + "  ||  ".join(v))
+    # near-duplicates that are NOT merged: same letters, different digits
+    print("-- NEAR-DUPES NOT merged (same letters, different digits):")
+    letters = df["k"].str.split("|").str[0]
+    buckets = {}
+    for i, l in enumerate(letters):
+        buckets.setdefault(l, set()).add(df["k"].iloc[i])
+    n = 0
+    for l, keys in buckets.items():
+        if len(keys) > 1 and n < 10:
+            variants = sorted({raw for k in keys for raw in
+                               df.loc[df["k"] == k, "raw"].unique()})
+            print("   " + "  ||  ".join(variants[:4]))
+            n += 1
+    if n == 0:
+        print("   (none)")
 
 
 def check_m5_hour(b):
@@ -456,6 +490,9 @@ def main():
         print(f"{bid:9} {tag:5} {msg[:70]:72} {imp}/{nq}")
     if not rows:
         print("(no findings)")
+    if "--pairs" in sys.argv:
+        for bid in shops:
+            print_customer_pairs(bid)
 
 
 if __name__ == "__main__":
