@@ -93,9 +93,13 @@ def run(limit=None, businesses=None, verbose=0, dump=None):
             got_type, got = engine.answer(b, q["question"], q["as_of_date"])
         except Exception as e:
             got_type, got = "unanswerable", {"reason": str(e)}
-        if got_type == "unanswerable":
+        if got_type == "abstain":
+            ok = None                      # scores 0
+        elif got_type == "unanswerable":
             ok = (ref is not None and rtype == "unanswerable")
-            if not ok:
+            if ok:
+                n_correct += 1
+            else:
                 n_wrong += 1
         elif ref is None:
             ok = None

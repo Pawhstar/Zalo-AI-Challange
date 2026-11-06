@@ -8,6 +8,9 @@ from datamate.periods import (Period, resolve_period, month_period, quarter_peri
                      round_money, round2, prev_period)
 import datamate.metrics as M
 import datamate.intents as intents
+import datamate.query as query
+import datamate.debt as debt
+import datamate.purchases as purchases
 
 # ---------------------------------------------------------------- period glue
 
@@ -50,17 +53,65 @@ def _revenue_of(O, L):
 
 # ---------------------------------------------------------------- answer
 
-def answer(b, q, as_of):
-    """Returns (type, value)."""
+_last_src = ""
+_last_tag = None
+
+
+def raw_answer(b, q, as_of):
+    """(type, value, tag) before the abstain policy. tag names the route and
+    question category ('q:revenue:value:group:number', 'debt:number', 'e:best_day')."""
+    global _last_src, _last_tag
+    for name, mod in (("debt", debt), ("pur", purchases), ("q", query)):
+        try:
+            r = mod.try_answer(b, q, as_of)
+        except Exception:
+            r = None
+        if r is not None:
+            _last_src = "q"
+            tag = query.tag_of(r) if name == "q" else f"{name}:{r[0]}"
+            _last_tag = tag
+            return r[0], r[1], tag
+    _last_src = "e"
     intent, p = intents.classify(q, as_of, b)
     metric = p.get("metric", "revenue")
     per = period_for(q, as_of, b)
     if per is None:
         per = Period(pd.Timestamp(as_of), pd.Timestamp(as_of))
+    # records dated after 'today' have not happened yet (rulebook)
+    per = Period(per.start, min(per.end, pd.Timestamp(as_of).normalize()))
     try:
-        return _dispatch(b, q, as_of, intent, metric, p, per)
-    except Exception as e:
-        return "unanswerable", {"reason": f"error: {e}"}
+        t, v = _dispatch(b, q, as_of, intent, metric, p, per)
+    except Exception:
+        t, v = "unanswerable", {"reason": "crash"}
+    tag = f"e:{intent}:{t}"
+    _last_tag = tag
+    return t, v, tag
+
+
+def _policy():
+    global _POLICY
+    if _POLICY is None:
+        import json, os
+        p = os.path.join(os.path.dirname(__file__), "policy.json")
+        _POLICY = json.load(open(p, encoding="utf-8")) if os.path.exists(p) else {"trusted": []}
+        _POLICY["trusted"] = set(_POLICY.get("trusted", []))
+    return _POLICY
+
+_POLICY = None
+
+
+def answer(b, q, as_of):
+    """Returns (type, value). A wrong answer costs -1 and an abstain 0, so only
+    question categories (tags) whose held-out accuracy across shop families
+    is clearly above 50% are answered (policy.json, built by cross-validation);
+    the rest abstain. DATAMATE_RAW=1 disables the policy (evaluation)."""
+    import os
+    t, v, tag = raw_answer(b, q, as_of)
+    if os.environ.get("DATAMATE_RAW") == "1":
+        return t, v
+    if tag not in _policy()["trusted"]:
+        return "abstain", None
+    return t, v
 
 
 def _dispatch(b, q, as_of, intent, metric, p, per):
