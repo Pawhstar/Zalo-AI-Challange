@@ -11,6 +11,10 @@ out = {"rule": f"tags with train accuracy >= {thr} over >= {min_n} answers "
                f"(threshold chosen by leave-one-shop-family-out CV)",
        "trusted": trusted,
        "train_stats": {t: {"correct": c, "wrong": w} for t, (c, w) in sorted(s.items()) if t}}
-p = r"C:/Users/start/Downloads/Zalo-AI-Challange/datamate/datamate/policy.json"
+import os as _os
+# repo root (folder holding Train/ and datamate/); override with DATAMATE_ROOT
+ROOT = _os.environ.get("DATAMATE_ROOT") or _os.path.dirname(_os.path.dirname(
+    _os.path.dirname(_os.path.abspath(__file__)))).replace("\\", "/")
+p = ROOT + "/datamate/datamate/policy.json"
 json.dump(out, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 print(len(trusted), "trusted tags ->", p)

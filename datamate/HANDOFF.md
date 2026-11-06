@@ -61,7 +61,7 @@ python tools/make_policy.py dump_raw.jsonl 0.5 5                           # ghi
 python tools/fasteval.py                                                   # điểm có abstain
 python tools/diag.py public_test                                           # kiểm tra nhất quán loader, không cần nhãn
 ```
-Các script trong `tools/` có đường dẫn cứng tới `C:/Users/start/Downloads/Zalo-AI-Challange` — sửa biến `ROOT` nếu chuyển máy.
+Các script trong `tools/` tự tìm thư mục gốc repo (thư mục chứa `Train/` và `datamate/`); đặt `DATAMATE_ROOT` nếu dữ liệu nằm chỗ khác. Cache các shop đã load nằm ở `datamate/tools/bizcache*/` (git bỏ qua).
 
 ## 5. Bài học
 

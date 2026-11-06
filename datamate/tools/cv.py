@@ -6,7 +6,11 @@ whose accuracy on the OTHER families is >= thr with >= min_n answers, and
 score the held-out family with that policy."""
 import json, os, re, collections, itertools, sys
 
-ROOT = r"C:/Users/start/Downloads/Zalo-AI-Challange/Train/train/data"
+import os as _os
+# repo root (folder holding Train/ and datamate/); override with DATAMATE_ROOT
+ROOT = _os.environ.get("DATAMATE_ROOT") or _os.path.dirname(_os.path.dirname(
+    _os.path.dirname(_os.path.abspath(__file__)))).replace("\\", "/")
+ROOT = ROOT + "/Train/train/data"
 rows = [json.loads(l) for l in open(sys.argv[1] if len(sys.argv) > 1 else "dump_raw.jsonl", encoding="utf-8")]
 
 

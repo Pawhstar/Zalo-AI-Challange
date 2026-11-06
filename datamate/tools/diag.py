@@ -1,7 +1,10 @@
 """Label-free consistency checks of the loader on any split."""
 import sys, os, re, pickle
 import pandas as pd
-ROOT = r"C:/Users/start/Downloads/Zalo-AI-Challange"
+import os as _os
+# repo root (folder holding Train/ and datamate/); override with DATAMATE_ROOT
+ROOT = _os.environ.get("DATAMATE_ROOT") or _os.path.dirname(_os.path.dirname(
+    _os.path.dirname(_os.path.abspath(__file__)))).replace("\\", "/")
 sys.path.insert(0, ROOT + "/datamate")
 from datamate.loader import Business
 split = sys.argv[1]
