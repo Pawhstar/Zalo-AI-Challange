@@ -32,9 +32,11 @@
   "q:revenue:share:cust_group:percent",
   "q:revenue:share:group:percent",
   "q:revenue:share:pay:percent",
+  "q:revenue:share:rx:percent",
   "q:revenue:value:cust_group:number",
   "q:revenue:value:employee:number",
   "q:revenue:value:group:number",
+  "q:revenue:value:ingredient:number",
   "q:revenue:value:item:number",
   "q:revenue:value:nofilter:cmp:percent",
   "q:revenue:value:nofilter:months:list",
@@ -61,8 +63,10 @@
   "rep:warranty_rate:percent",
   "x:best_month:date",
   "x:items_min_orders:number",
+  "x:no_group:unanswerable",
   "x:top_cust_orders:string",
-  "x:trait:unanswerable"
+  "x:trait:unanswerable",
+  "x:unsold:number"
  ],
  "from_rule_tests": [
   "fee:points:number",
@@ -85,6 +89,7 @@
   "rep:top_model_money:string",
   "rep:warranty_count:number",
   "rep:warranty_rate:percent",
+  "x:no_group:unanswerable",
   "x:trait:unanswerable"
  ],
  "train_stats": {
@@ -186,7 +191,7 @@
   },
   "e:prescription_ratio:unanswerable": {
    "correct": 0,
-   "wrong": 2
+   "wrong": 1
   },
   "e:price_on_day:number": {
    "correct": 45,
@@ -210,7 +215,7 @@
   },
   "e:qty_of_item:number": {
    "correct": 2,
-   "wrong": 80
+   "wrong": 84
   },
   "e:rev_diff:number": {
    "correct": 0,
@@ -222,7 +227,7 @@
   },
   "e:revenue:number": {
    "correct": 7,
-   "wrong": 278
+   "wrong": 160
   },
   "e:revenue_by_ingredient:unanswerable": {
    "correct": 1,
@@ -238,7 +243,7 @@
   },
   "e:stock_qty:unanswerable": {
    "correct": 4,
-   "wrong": 40
+   "wrong": 29
   },
   "e:top_customer:string": {
    "correct": 10,
@@ -317,8 +322,8 @@
    "wrong": 0
   },
   "q:qty:value:item:number": {
-   "correct": 131,
-   "wrong": 6
+   "correct": 132,
+   "wrong": 5
   },
   "q:qty:value:nofilter:number": {
    "correct": 21,
@@ -341,12 +346,12 @@
    "wrong": 0
   },
   "q:revenue:share:cust_group:percent": {
-   "correct": 14,
+   "correct": 17,
    "wrong": 0
   },
   "q:revenue:share:group:percent": {
-   "correct": 33,
-   "wrong": 0
+   "correct": 72,
+   "wrong": 7
   },
   "q:revenue:share:group:unanswerable": {
    "correct": 2,
@@ -361,7 +366,7 @@
    "wrong": 0
   },
   "q:revenue:share:rx:percent": {
-   "correct": 3,
+   "correct": 12,
    "wrong": 6
   },
   "q:revenue:value:channel:number": {
@@ -369,7 +374,7 @@
    "wrong": 0
   },
   "q:revenue:value:cust_group:number": {
-   "correct": 18,
+   "correct": 20,
    "wrong": 0
   },
   "q:revenue:value:employee:number": {
@@ -377,12 +382,12 @@
    "wrong": 0
   },
   "q:revenue:value:group:number": {
-   "correct": 22,
-   "wrong": 0
+   "correct": 45,
+   "wrong": 3
   },
   "q:revenue:value:ingredient:number": {
-   "correct": 11,
-   "wrong": 23
+   "correct": 24,
+   "wrong": 10
   },
   "q:revenue:value:item:cmp:percent": {
    "correct": 0,
@@ -390,7 +395,7 @@
   },
   "q:revenue:value:item:number": {
    "correct": 105,
-   "wrong": 10
+   "wrong": 9
   },
   "q:revenue:value:item:unanswerable": {
    "correct": 2,
@@ -425,7 +430,7 @@
    "wrong": 0
   },
   "q:revenue:value:rx:number": {
-   "correct": 3,
+   "correct": 10,
    "wrong": 12
   },
   "q:revenue:value:shift:number": {
@@ -463,6 +468,10 @@
   "x:trait:unanswerable": {
    "correct": 3,
    "wrong": 0
+  },
+  "x:unsold:number": {
+   "correct": 32,
+   "wrong": 2
   }
  }
 }

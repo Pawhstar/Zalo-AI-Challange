@@ -43,6 +43,10 @@ CASES = [{
         ("Ai trong cửa hàng được khách quý mến nhất?", A, "unanswerable", None),
         ("Tháng 6/2026 nhân viên nào thân thiện nhất?", A, "unanswerable", None),
         ("Khách hàng trung thực nhất tháng 6/2026 là ai?", A, "unanswerable", None),
+        # §7: the shop records no item groups at all -> a group question is unanswerable
+        ("Tháng 6/2026 nhóm bánh chiếm bao nhiêu % doanh thu?", A, "unanswerable", None),
+        ("Doanh thu nhóm cà phê tháng 6/2026 là bao nhiêu?", A, "unanswerable", None),
+        ("Tháng 6/2026 nhóm đồ uống bán được bao nhiêu tiền?", A, "unanswerable", None),
         # a word inside an item name is not a judgement
         # ORD000004 huỷ -> ngoài
         ("Doanh thu của Bánh mì ngon tháng 6/2026 là bao nhiêu?", A, "number", 60000),

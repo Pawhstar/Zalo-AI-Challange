@@ -46,8 +46,38 @@ def try_trap(b, q, as_of):
     return None
 
 
+def _records_groups(b):
+    """True when any table of the shop has a column that could hold an item
+    group or category ('Nhóm', 'Loại', 'Phân loại', 'Danh mục', 'Ngành')."""
+    for _, h in b._iter_tables():
+        for c in h.columns:
+            if re.search(r"\b(nhom|loai|phan loai|danh muc|nganh|category|group)\b", fold(c)):
+                return True
+    return False
+
+
 def try_answer(b, q, as_of):
     qn = normq(q)
+    # ---- an item group asked about in a shop that records no groups at all
+    # (rulebook §7: information the files do not hold is unanswerable)
+    if re.search(r"\bnhom\b", qn) and not re.search(r"nhom khach|khach nhom|than thiet|\bsi\b|\ble\b", qn):
+        from datamate import query
+        c = query._ctx(b)
+        if not c.get("groups") and not c.get("cust_groups") and not _records_groups(b):
+            return "unanswerable", {"reason": "the shop records no item groups"}, "x:no_group:unanswerable"
+        # the shop has item groups, but not the one asked about
+        m = re.search(r"\bnhom\s+(?:hang\s+)?(?:hoa\s+)?([a-z]+(?:\s+[a-z]+){0,3}?)(?=\s+(?:chiem|ban|thu|trong|thang|"
+                      r"tuan|quy|nam|hom|ngay|tu|duoc|co|la|mang|dong|cua|tinh|so|dat|tang|giam|nao|bao|may)\b|\s*$)", qn)
+        about_sales = re.search(r"doanh thu|dthu|\bban\b|chiem|thu ve|tien|ti trong|phan tram|%", qn)
+        debt = re.search(r"\bno\b|tuoi|\d+\s*[-–]\s*\d+", qn)
+        if m and c.get("groups") and about_sales and not debt:
+            asked = m.group(1).strip()
+            gs = [fold(g) for g in c["groups"]] + [fold(g) for g in c.get("cust_groups", [])]
+            hit = any(g and (asked.startswith(g) or g.startswith(asked) or re.search(r"\b" + re.escape(g) + r"\b", qn))
+                      for g in gs)
+            if asked and not hit:
+                return "unanswerable", {"reason": f"no item group '{asked}' in this shop"}, \
+                    "x:unknown_group:unanswerable"
     O = b.orders
     if len(O) == 0:
         return None
@@ -95,6 +125,24 @@ def try_answer(b, q, as_of):
         Z = Z[Z["item"].fillna("").astype(str) != ""]
         per = Z.groupby("item")["order_id"].nunique()
         return "number", int((per >= n).sum()), "x:items_min_orders:number"
+
+    # ---- unsold items (rulebook §5): sold before the period in a valid order,
+    # but in no valid order of the period. 'lá é' is part of an item name.
+    if re.search(r"\b(bi e|e han|e hang|e den muc)\b|(mat hang|mon|san pham|hang)\s+(bi\s+)?e\b(?!\s*(la|lá))"
+                 r"|khong ai mua|(khong|ko|hong|hok) ban (ra )?(duoc|dc)( cai| mon)?( nao)?", qn) and \
+            not re.search(r"\bla e\b", qn) and re.search(r"bao nhieu|may|bnhiu|dem|so mat hang|tong cong", qn):
+        L = b.lines
+        if len(L) == 0:
+            return None
+        ld = pd.to_datetime(L["date"], errors="coerce").dt.normalize()
+        Z = L[L["valid"].fillna(False).astype(bool) & (L["item"].fillna("").astype(str) != "")]
+        if "non_goods" in Z.columns:
+            Z = Z[~Z["non_goods"].fillna(False).astype(bool)]
+        Z = Z[~Z["item"].astype(str).map(fold).str.startswith("phi phuc vu")]
+        zd = ld[Z.index]
+        before = set(Z.loc[zd < p.start, "item"])
+        during = set(Z.loc[(zd >= p.start) & (zd <= p.end), "item"])
+        return "number", len(before - during), "x:unsold:number"
 
     # ---- month with the highest / lowest revenue
     if re.search(r"thang nao", qn) and re.search(r"(cao|nhieu|thap|it)( tien)? nhat", qn):

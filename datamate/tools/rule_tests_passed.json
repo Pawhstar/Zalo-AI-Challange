@@ -22,6 +22,7 @@
   "rep:top_model_money:string",
   "rep:warranty_count:number",
   "rep:warranty_rate:percent",
+  "x:no_group:unanswerable",
   "x:trait:unanswerable"
  ],
  "stats": {
@@ -115,6 +116,10 @@
   },
   "x:items_min_orders:number": {
    "correct": 2,
+   "wrong": 0
+  },
+  "x:no_group:unanswerable": {
+   "correct": 3,
    "wrong": 0
   },
   "x:top_cust_orders:string": {

@@ -76,7 +76,10 @@ _RULES = [
     (r"^gia von", ["cost", "cost_item"]),
     (r"^gia ban", ["sale_item"]),
     (r"^nhom hang", ["group"]),
-    (r"^nhom khach", ["cust_group", "group"]),
+    # a customer group is never an item group: 'nhóm khách' only maps to
+    # cust_group (it used to also claim 'group', so an invoice table carrying
+    # both columns could read the customer group as the item group)
+    (r"^nhom khach", ["cust_group"]),
     (r"^ton kho", ["stock_qty"]),
     (r"^so tien$", ["pay_amt"]),
     (r"^so lo", ["lot"]),

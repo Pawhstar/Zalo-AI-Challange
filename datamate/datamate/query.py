@@ -75,15 +75,24 @@ def _ctx(b):
     # customer group per order
     cg = _customer_groups(b)
     if len(O):
+        # the group written on the order itself (invoice column 'Nhóm khách
+        # hàng') wins; otherwise look the customer up in the customer list
+        own = O["cust_group"].fillna("").astype(str) if "cust_group" in O.columns \
+            else pd.Series("", index=O.index)
+        own = own.where(~own.str.strip().str.lower().isin(["nan", "none", "nat"]), "")
         if cg:
             key = O["customer_id"].fillna("").astype(str) if "customer_id" in O.columns else None
             g = key.map(cg) if key is not None else pd.Series(np.nan, index=O.index)
             g2 = O["customer"].map(lambda s: cg.get(fold(s))) if "customer" in O.columns else None
             if g2 is not None:
                 g = g.where(g.notna(), g2)
-            O["cust_group"] = g.fillna("")
+            O["cust_group"] = own.where(own != "", g.fillna(""))
         else:
-            O["cust_group"] = ""
+            O["cust_group"] = own
+        cg = dict(cg)
+        for v in O["cust_group"].unique():
+            if v:
+                cg.setdefault("__order__" + fold(v), v)
         if "walk_in" in O.columns:
             O.loc[O["walk_in"].fillna(False).astype(bool), "cust_group"] = ""
     c["L"], c["O"] = L, O

@@ -311,9 +311,10 @@ COL = {
     "cost_item": ["giá vốn hiện tại", "giavonhang", "giá vốn", "gia von"],
     "sale_item": ["giá lẻ", "giabanle", "giá bán", "gia ban", "giá", "gia"],
     "group":     ["phân loại", "danhmuc", "nhóm", "nhóm hàng", "nhom hang", "nhóm hàng hóa", "nhom hang hoa",
-                  "loại hàng hóa", "loai hang hoa", "danh mục", "danh muc",
-                  "nhóm khách hàng", "nhom khach hang", "đối tượng kh", "loại hình khách",
-                  "loai hinh khach"],
+                  "loại hàng hóa", "loai hang hoa", "danh mục", "danh muc"],
+    "cust_group": ["nhóm khách hàng", "nhom khach hang", "nhóm khách", "nhom khach",
+                   "loại khách", "loai khach", "kiểu khách", "kieu khach", "hạng khách",
+                   "hang khach", "đối tượng kh", "loại hình khách", "loai hinh khach"],
     "stock_qty": ["ton kho", "toncuoi", "tồn cuối kỳ", "ton cuoi ky", "tồn cuối", "ton cuoi", "tồn thực",
                   "ton thuc", "tồn", "ton"],
     "receipt_id":["số phiếu", "so phieu", "mã nhập hàng", "ma nhap hang",
@@ -731,6 +732,7 @@ class Business:
 
     def _build_items(self):
         best = None
+        others = []
         for name, h in self._iter_tables():
             if len(h) < 2:
                 continue
@@ -741,8 +743,9 @@ class Business:
             c_base = col_ex(h, "base_unit", [c_name])
             c_cost = col_ex(h, "cost_item", [c_name])
             c_price = col_ex(h, "sale_item", [c_name])
-            c_grp = col_ex(h, "group", [c_name])
-            if not (c_cost or c_price or c_base):
+            c_grp = self._item_group_col(h, [c_name, c_id])
+            enrich_only = not (c_cost or c_price or c_base)
+            if enrich_only and not c_grp:
                 continue
             t = pd.DataFrame()
             t["item"] = h[c_name].map(norm)
@@ -752,11 +755,39 @@ class Business:
             t["sale_price"] = h[c_price].map(parse_num) if c_price else np.nan
             t["group"] = h[c_grp].map(norm) if c_grp else ""
             t = t[t["item"] != ""]
-            # prefer the table with the most distinct items
-            if best is None or len(t) > len(best[1]):
-                best = (name, t)
+            others.append(t)
+            if enrich_only:
+                continue
+            # prefer the list with the most distinct items; between equals, the
+            # one with fewer rows per item (a catalog, not a sales log)
+            key = (t["item"].nunique(), -len(t))
+            if best is None or key > best[2]:
+                best = (name, t, key)
         if best is not None:
-            self.items = best[1].drop_duplicates(subset=["item"], keep="first").reset_index(drop=True)
+            items = best[1].drop_duplicates(subset=["item"], keep="first").reset_index(drop=True)
+            # an item's attributes are often spread over several lists (a
+            # conversion list with the base unit, a product list with the SKU
+            # and the group): fill what the chosen list lacks from the others,
+            # matched by code, else by name
+            for t in others:
+                if t is best[1]:
+                    continue
+                by_id = {k: r for k, r in zip(t["item_id"], t.to_dict("records")) if k}
+                by_nm = {fold(k): r for k, r in zip(t["item"], t.to_dict("records")) if k}
+                for c in ("item_id", "base_unit", "group", "cost", "sale_price"):
+                    cur = items[c]
+                    miss = cur.isna() if pd.api.types.is_numeric_dtype(cur) else \
+                        (cur.isna() | (cur.astype(str).str.strip() == ""))
+                    if not miss.any():
+                        continue
+                    def pick(i):
+                        r = by_id.get(items.at[i, "item_id"]) if items.at[i, "item_id"] else None
+                        r = r or by_nm.get(fold(items.at[i, "item"]))
+                        v = r.get(c) if r else None
+                        return v if v is not None and not (isinstance(v, float) and np.isnan(v)) and v != "" else items.at[i, c]
+                    idx = items.index[miss]
+                    items.loc[idx, c] = [pick(i) for i in idx]
+            self.items = items
             # fill missing base units from the README conversion table
             readme_base = self._parse_readme_units()
             self._readme_base_unit = readme_base
@@ -993,6 +1024,18 @@ class Business:
                 else pd.Series("", index=O.index)
             looks_code = cur.eq("") | cur.eq(cid) | cur.isin(list(names.keys()))
             O["customer"] = np.where(looks_code & cid.ne(""), cid.map(names).fillna(cid), cur)
+        # orders that only carry an employee code (NV001): name from the staff list
+        if "employee" in O.columns:
+            emp = O["employee"].fillna("").astype(str)
+            filled = emp[emp != ""]
+            if len(filled) and filled.str.fullmatch(r"NV\d{2,}").mean() > 0.9:
+                names = self._staff_names()
+                if names:
+                    O["employee_id"] = emp
+                    O["employee"] = emp.map(lambda e: names.get(e, e))
+                    if len(self.lines) and "employee" in self.lines.columns:
+                        le = self.lines["employee"].fillna("").astype(str)
+                        self.lines["employee"] = le.map(lambda e: names.get(e, e))
         # walk-in customers (rulebook §3): no code in a shop with codes, or a
         # placeholder name ('Khách lẻ', 'lẻ', 'kl'...) -> one label, never ranked
         if "customer" in O.columns:
@@ -1115,7 +1158,7 @@ class Business:
     def _merge_header(self, lines, hdr_orders):
         """Attach header attributes to the detail lines and rebuild the orders."""
         keys = ["order_id", "date", "status", "customer", "customer_id", "employee",
-                "channel", "payment_method", "hour"]
+                "channel", "payment_method", "hour", "cust_group"]
         H = hdr_orders.copy()
         for c in keys:
             if c not in H.columns:
@@ -1178,6 +1221,8 @@ class Business:
         O["customer"] = h[c_c].map(norm) if c_c else ""
         c_cid = col_ex(h, "cust_id", [c_c] if c_c else [])
         O["customer_id"] = h[c_cid].map(norm) if c_cid else ""
+        c_cg = self._cust_group_col(h, [c_c, c_cid])
+        O["cust_group"] = h[c_cg].map(norm) if c_cg else ""
         c_e = col(h, "employee")
         O["employee"] = h[c_e].map(norm) if c_e else ""
         c_ch = col(h, "channel")
@@ -1299,6 +1344,9 @@ class Business:
             L["status"] = L["status_raw"].map(classify_status) if c_stat else ""
         grab("cust_name", "customer")
         c_cid = grab("cust_id", "customer_id")
+        c_cg = self._cust_group_col(h, [c_item])
+        if c_cg is not None:
+            L["cust_group"] = h[c_cg].map(norm)
         grab("employee", "employee")
         grab("channel", "channel")
         grab("pay_method", "payment_method")
@@ -1503,7 +1551,7 @@ class Business:
         oid = L["order_id"].astype(str)
         real = ~oid.str.fullmatch(r"R\d+") & (oid != "") & (oid != "None")
         for c in ("date", "customer", "customer_id", "employee", "channel",
-                  "payment_method", "hour", "status_raw"):
+                  "payment_method", "hour", "status_raw", "cust_group"):
             if c not in L.columns:
                 continue
             v = L[c]
@@ -1542,7 +1590,7 @@ class Business:
         O = pd.DataFrame(index=g.size().index)
         O["order_id"] = O.index
         for c in ("date", "status", "customer", "customer_id", "employee",
-                  "channel", "payment_method", "hour"):
+                  "channel", "payment_method", "hour", "cust_group"):
             if c in L.columns:
                 O[c] = g[c].first()
         O["status_raw"] = O.get("status_raw", "")
@@ -1689,6 +1737,85 @@ class Business:
         self.payments = best[1] if best else pd.DataFrame()
 
     # -------------------------------------------------- customers
+    def _staff_names(self):
+        """{employee code: name} from a staff list: a table with a column of
+        NV.. codes and a name column ('Tên gọi', 'Họ tên', 'Tên NV')."""
+        for name, h in self._iter_tables(skip=self.sales_sheets):
+            ids = _id_columns(h)
+            c_id = next((c for c, r in ids.items() if r == "NV"), None)
+            if c_id is None:
+                continue
+            c_nm = None
+            for c in h.columns:
+                k = _akey(c)
+                if c != c_id and re.search(r"tengoi|hoten|tennv|tennhanvien|^ten$|hovaten|fullname", k):
+                    c_nm = c
+                    break
+            if c_nm is None:
+                continue
+            m = {norm(i): norm(n) for i, n in zip(h[c_id], h[c_nm]) if norm(i) and norm(n)}
+            if len(m) >= 1 and len(m) <= 200:
+                return m
+        return {}
+
+    @staticmethod
+    def _item_group_col(h, exclude=()):
+        """The item-group column of a list: the role's column when it really
+        splits items, else the header like 'Nhóm hàng', 'Phân loại', 'Danh mục'
+        with the most distinct values. A column holding one value for every
+        item ('Loại hàng hóa: Hàng hóa') is a type flag, not a grouping."""
+        ex = [e for e in exclude if e]
+
+        def n_distinct(cc):
+            v = h[cc].dropna().astype(str).map(norm)
+            return v[v != ""].nunique()
+
+        c = col_ex(h, "group", ex)
+        if c is not None and n_distinct(c) >= 2:
+            return c
+        best = None
+        for cc in h.columns:
+            if cc in ex or cc == "_per":
+                continue
+            f = fold(cc)
+            if re.search(r"khach|\bkh\b|don vi|dvt|\bdv\b|thanh toan|\btt\b|kenh|giao|phieu|\bdon\b|chung tu|"
+                         r"\bno\b|thue|ca\b|nhan vien|nv\b", f):
+                continue
+            if not re.search(r"\b(nhom|loai|phan loai|danh muc|nganh|category|group)\b", f):
+                continue
+            n = n_distinct(cc)
+            if 2 <= n <= 200 and (best is None or (("nhom" in f), n) > best[0]):
+                best = ((("nhom" in f), n), cc)
+        return best[1] if best else c
+
+    @staticmethod
+    def _cust_group_col(h, exclude=()):
+        """The customer-group column of a table: the README's 'nhóm khách',
+        else a header like 'Nhóm/Loại/Kiểu khách' that really splits customers
+        (at least two different values: 'lẻ / thân thiết / sỉ'); a column with
+        one value for everybody ('Đối tượng KH: Cá nhân') is not a grouping."""
+        ex = [e for e in exclude if e]
+        c = col_ex(h, "cust_group", ex)
+        if _readme_roles(h) is not None:
+            return c
+        cands = [c] if c else []
+        for cc in h.columns:
+            if cc in ex or cc in cands or cc == "_per":
+                continue
+            if re.search(r"(nhom|loai|kieu|hang|doi tuong)\s*(khach|kh\b)", fold(cc)):
+                cands.append(cc)
+        best = None
+        for cc in cands:
+            v = h[cc].dropna().astype(str).map(norm)
+            v = v[v != ""]
+            n = v.nunique()
+            if n < 2 or n > 30:
+                continue
+            score = n + 10 * v.map(fold).str.contains(r"than thiet|\bsi\b|vip|\ble\b").any()
+            if best is None or score > best[0]:
+                best = (score, cc)
+        return best[1] if best else None
+
     def _build_customers(self):
         best = None
         for name, h in self._iter_tables():
@@ -1698,7 +1825,7 @@ class Business:
             if not c_name:
                 continue
             c_id = col_ex(h, "cust_id", [c_name])
-            c_grp = col_ex(h, "group", [c_name])
+            c_grp = self._cust_group_col(h, [c_name, c_id])
             t = pd.DataFrame()
             t["name"] = h[c_name].map(norm)
             t["customer_id"] = h[c_id].map(norm) if c_id else ""
