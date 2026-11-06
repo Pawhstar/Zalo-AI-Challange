@@ -182,10 +182,31 @@ def _quarter_of(q, y, as_of):
     return quarter_period(q, yy)
 
 
+def _yy(m):
+    """'3/26' -> '3/2026'. Only when the second number cannot be a month
+    (13..39), so a day/month like '5/06' is left alone."""
+    a, b = int(m.group(1)), int(m.group(2))
+    if 1 <= a <= 12 and 13 <= b <= 39:
+        return f"{a}/20{b:02d}"
+    return m.group(0)
+
+
 def _norm_text(q):
     s = normq(q)
     # common typos / shorthands
     s = re.sub(r"\bthangs\b", "thang", s)
+    # month written with its year, glued or dashed: 'th4/2026', 't8/2025',
+    # 'th 3/26', '7-2026' -> 'thang 4/2026' ...
+    s = re.sub(r"(?<![\d/])(\d{1,2})\s*-\s*((?:19|20)\d\d)(?![\d/])", r"\1/\2", s)
+    s = re.sub(r"(?<![\d/])(\d{1,2})\s*/\s*(\d{2})(?![\d/])", _yy, s)
+    s = re.sub(r"\b(?:th|t)\s*(?=\d{1,2}\s*/\s*(?:19|20)\d\d(?![\d/]))", "thang ", s)
+    # a bare 'M/YYYY' (not part of 'd/m/yyyy') is a month
+    s = re.sub(r"(?<![\d/])(?<!quy )(?<!tuan )(?<!q)\b(\d{1,2})\s*/\s*((?:19|20)\d\d)(?![\d/])",
+               lambda m: f"thang {m.group(1)}/{m.group(2)}" if 1 <= int(m.group(1)) <= 12 else m.group(0), s)
+    s = re.sub(r"\bthang\s+thang\b", "thang", s)
+    s = re.sub(r"\bq\s*([1-4])\s*/\s*((?:19|20)\d\d)\b", r"quy \1/\2", s)       # 'Q1/2026'
+    # central-Vietnam 'ni' = 'này' ('tháng ni', 'bữa ni', 'năm ni', 'tuần ni')
+    s = re.sub(r"\b(thang|bua|nam|tuan|quy|hom)\s+ni\b", r"\1 nay", s)
     s = re.sub(r"\bth\b(?=\s*(\d|nay|truoc|trc))", "thang", s)
     s = re.sub(r"\b(hnay|hom nayf?|bua nay|ngay hom nay)\b", "hom nay", s)
     s = re.sub(r"\b(hqua|hom wa|bua qua|bua hom qua)\b", "hom qua", s)
