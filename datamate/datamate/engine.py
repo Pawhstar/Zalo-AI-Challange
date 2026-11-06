@@ -11,6 +11,11 @@ import datamate.intents as intents
 import datamate.query as query
 import datamate.debt as debt
 import datamate.purchases as purchases
+import datamate.fees as fees
+import datamate.repair_answer as repair_answer
+import datamate.extra as extra
+from types import SimpleNamespace as _NS
+_TRAP = _NS(try_answer=extra.try_trap)
 
 # ---------------------------------------------------------------- period glue
 
@@ -61,13 +66,17 @@ def raw_answer(b, q, as_of):
     """(type, value, tag) before the abstain policy. tag names the route and
     question category ('q:revenue:value:group:number', 'debt:number', 'e:best_day')."""
     global _last_src, _last_tag
-    for name, mod in (("debt", debt), ("pur", purchases), ("q", query)):
+    for name, mod in (("trap", _TRAP), ("rep", repair_answer), ("fee", fees), ("debt", debt),
+                      ("pur", purchases), ("q", query), ("x", extra)):
         try:
             r = mod.try_answer(b, q, as_of)
         except Exception:
             r = None
         if r is not None:
             _last_src = "q"
+            if len(r) == 3:                       # the module names its own tag
+                _last_tag = r[2]
+                return r[0], r[1], r[2]
             tag = query.tag_of(r) if name == "q" else f"{name}:{r[0]}"
             _last_tag = tag
             return r[0], r[1], tag

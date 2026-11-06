@@ -1,0 +1,129 @@
+{
+ "min_cases": 3,
+ "passed": [
+  "fee:points:number",
+  "fee:ship:number",
+  "fee:voucher:number",
+  "q:revenue:value:nofilter:number",
+  "rep:avg_ticket:number",
+  "rep:avg_weekday:number",
+  "rep:commission:number",
+  "rep:commission:table",
+  "rep:commission_top:string",
+  "rep:job_visits:number",
+  "rep:mech_money:number",
+  "rep:mech_visits:number",
+  "rep:model_bikes:number",
+  "rep:regulars:number",
+  "rep:tickets:number",
+  "rep:top_mech_days:string",
+  "rep:top_mech_money:string",
+  "rep:top_mech_visits:string",
+  "rep:top_model_money:string",
+  "rep:warranty_count:number",
+  "rep:warranty_rate:percent",
+  "x:trait:unanswerable"
+ ],
+ "stats": {
+  "fee:points:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "fee:ship:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "fee:voucher:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "q:revenue:value:item:number": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "q:revenue:value:nofilter:number": {
+   "correct": 5,
+   "wrong": 0
+  },
+  "rep:avg_ticket:number": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "rep:avg_weekday:number": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "rep:commission:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:commission:table": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:commission_top:string": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:job_visits:number": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "rep:mech_money:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:mech_visits:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:model_bikes:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:regulars:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:tickets:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:top_mech_days:string": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:top_mech_money:string": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:top_mech_visits:string": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:top_model_money:string": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:warranty_count:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "rep:warranty_rate:percent": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "x:items_min_orders:number": {
+   "correct": 2,
+   "wrong": 0
+  },
+  "x:top_cust_orders:string": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "x:trait:unanswerable": {
+   "correct": 5,
+   "wrong": 0
+  }
+ }
+}

@@ -205,6 +205,10 @@ def _norm_text(q):
                lambda m: f"thang {m.group(1)}/{m.group(2)}" if 1 <= int(m.group(1)) <= 12 else m.group(0), s)
     s = re.sub(r"\bthang\s+thang\b", "thang", s)
     s = re.sub(r"\bq\s*([1-4])\s*/\s*((?:19|20)\d\d)\b", r"quy \1/\2", s)       # 'Q1/2026'
+    # 'so vs', 'so dới', 'so vói' (typos of 'so với') -> 'so voi'
+    s = re.sub(r"\bso\s+(vs|doi|voi|vo|vooi|voii)\b", "so voi", s)
+    # 'cùng tháng năm trước' = the same month a year earlier
+    s = re.sub(r"\bcung thang (cua )?nam (truoc|ngoai|roi)\b", "cung ky nam truoc", s)
     # central-Vietnam 'ni' = 'này' ('tháng ni', 'bữa ni', 'năm ni', 'tuần ni')
     s = re.sub(r"\b(thang|bua|nam|tuan|quy|hom)\s+ni\b", r"\1 nay", s)
     s = re.sub(r"\bth\b(?=\s*(\d|nay|truoc|trc))", "thang", s)
@@ -284,7 +288,8 @@ def _tet(s, as_of):
 
 
 _CMP_SPLIT = re.compile(r"\b(so voi|hon hay kem|tang hay giam|tang hay la giam|tang/giam|hon/kem|"
-                        r"cung ky|so cung ky)\b")
+                        r"cung ky|so cung ky|len hay xuong|cao hay thap|"
+                        r"so (?=(?:thang|tuan|quy|nam) (?:lien )?(?:truoc|roi|ngoai)\b))")
 
 
 def parse_time(q, as_of):
@@ -461,7 +466,7 @@ def _compare(s, spec, T):
             return previous_of(p, "quarter_td" if kind == "quarter_td" else "quarter", T)
         return Period(_shift_years(p.start, -1), _shift_years(p.end, -1))
     # explicit second period: 'so với tháng M/Y', 'so với quý Q/Y'
-    m = re.search(r"so voi\s*thang\s*(\d{1,2})(?:\s*(?:/|nam|-)\s*" + _Y + r")?", s)
+    m = re.search(r"\bso(?: voi)?\s*thang\s*(\d{1,2})(?:\s*(?:/|nam|-)\s*" + _Y + r")?", s)
     if m:
         q = _month_of(m.group(1), m.group(2), T)
         if q is not None:
@@ -473,7 +478,8 @@ def _compare(s, spec, T):
             return q
     if not re.search(r"so voi|hon hay kem|tang hay giam|tang giam|chenh lech|thay doi|tang truong|"
                      r"tang bao nhieu|giam bao nhieu|hon bao nhieu|kem bao nhieu|ky truoc|lien truoc|"
-                     r"tang/giam|hon/kem|tang hay la giam", s):
+                     r"tang/giam|hon/kem|tang hay la giam|len hay xuong|cao hay thap|"
+                     r"\bso (thang|tuan|quy|nam) (lien )?(truoc|roi|ngoai)\b|(thang|tuan|quy|nam) truoc do\b", s):
         return None
     return previous_of(p, kind, T)
 

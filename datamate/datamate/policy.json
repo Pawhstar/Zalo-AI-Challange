@@ -1,5 +1,5 @@
 {
- "rule": "tags with train accuracy >= 0.5 over >= 5 answers (threshold chosen by leave-one-shop-family-out CV)",
+ "rule": "tags with train accuracy >= 0.5 over >= 5 answers (threshold chosen by leave-one-shop-family-out CV); tags unseen on train are trusted only when every rule test routed to them passes",
  "trusted": [
   "debt:list",
   "debt:number",
@@ -14,6 +14,9 @@
   "e:top_customer:string",
   "e:top_customers:list",
   "e:top_sellers:list",
+  "fee:points:number",
+  "fee:ship:number",
+  "fee:voucher:number",
   "pur:number",
   "q:aov:value:nofilter:number",
   "q:days_over:value:nofilter:number",
@@ -39,7 +42,50 @@
   "q:revenue:value:pay:number",
   "q:revenue:value:shift:number",
   "q:revenue:vs_pct:shift:cmp:percent",
-  "q:revenue:vs_pct:shift:percent"
+  "rep:avg_ticket:number",
+  "rep:avg_weekday:number",
+  "rep:commission:number",
+  "rep:commission:table",
+  "rep:commission_top:string",
+  "rep:job_visits:number",
+  "rep:mech_money:number",
+  "rep:mech_visits:number",
+  "rep:model_bikes:number",
+  "rep:regulars:number",
+  "rep:tickets:number",
+  "rep:top_mech_days:string",
+  "rep:top_mech_money:string",
+  "rep:top_mech_visits:string",
+  "rep:top_model_money:string",
+  "rep:warranty_count:number",
+  "rep:warranty_rate:percent",
+  "x:best_month:date",
+  "x:items_min_orders:number",
+  "x:top_cust_orders:string",
+  "x:trait:unanswerable"
+ ],
+ "from_rule_tests": [
+  "fee:points:number",
+  "fee:ship:number",
+  "fee:voucher:number",
+  "rep:avg_ticket:number",
+  "rep:avg_weekday:number",
+  "rep:commission:number",
+  "rep:commission:table",
+  "rep:commission_top:string",
+  "rep:job_visits:number",
+  "rep:mech_money:number",
+  "rep:mech_visits:number",
+  "rep:model_bikes:number",
+  "rep:regulars:number",
+  "rep:tickets:number",
+  "rep:top_mech_days:string",
+  "rep:top_mech_money:string",
+  "rep:top_mech_visits:string",
+  "rep:top_model_money:string",
+  "rep:warranty_count:number",
+  "rep:warranty_rate:percent",
+  "x:trait:unanswerable"
  ],
  "train_stats": {
   "debt:list": {
@@ -64,7 +110,7 @@
   },
   "e:best_day:date": {
    "correct": 122,
-   "wrong": 14
+   "wrong": 8
   },
   "e:best_day:unanswerable": {
    "correct": 2,
@@ -128,7 +174,7 @@
   },
   "e:n_orders_valid:number": {
    "correct": 0,
-   "wrong": 5
+   "wrong": 1
   },
   "e:net_profit_month:unanswerable": {
    "correct": 0,
@@ -176,7 +222,7 @@
   },
   "e:revenue:number": {
    "correct": 7,
-   "wrong": 305
+   "wrong": 278
   },
   "e:revenue_by_ingredient:unanswerable": {
    "correct": 1,
@@ -194,21 +240,17 @@
    "correct": 4,
    "wrong": 40
   },
-  "e:stock_value:unanswerable": {
-   "correct": 1,
-   "wrong": 0
-  },
   "e:top_customer:string": {
    "correct": 10,
-   "wrong": 5
+   "wrong": 0
   },
   "e:top_customer:unanswerable": {
    "correct": 1,
    "wrong": 0
   },
   "e:top_customers:list": {
-   "correct": 10,
-   "wrong": 1
+   "correct": 14,
+   "wrong": 2
   },
   "e:top_sellers:list": {
    "correct": 43,
@@ -355,8 +397,8 @@
    "wrong": 0
   },
   "q:revenue:value:nofilter:cmp:percent": {
-   "correct": 168,
-   "wrong": 6
+   "correct": 171,
+   "wrong": 3
   },
   "q:revenue:value:nofilter:cmp:unanswerable": {
    "correct": 2,
@@ -395,11 +437,31 @@
    "wrong": 1
   },
   "q:revenue:vs_pct:shift:cmp:percent": {
-   "correct": 10,
+   "correct": 12,
    "wrong": 0
   },
   "q:revenue:vs_pct:shift:percent": {
-   "correct": 5,
+   "correct": 3,
+   "wrong": 0
+  },
+  "x:best_month:date": {
+   "correct": 13,
+   "wrong": 0
+  },
+  "x:items_min_orders:number": {
+   "correct": 7,
+   "wrong": 2
+  },
+  "x:top_cust_orders:string": {
+   "correct": 11,
+   "wrong": 0
+  },
+  "x:top_cust_orders:unanswerable": {
+   "correct": 2,
+   "wrong": 0
+  },
+  "x:trait:unanswerable": {
+   "correct": 3,
    "wrong": 0
   }
  }

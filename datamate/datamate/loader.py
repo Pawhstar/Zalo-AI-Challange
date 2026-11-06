@@ -897,6 +897,13 @@ class Business:
 
     # -------------------------------------------------- sales
     def _build_sales(self):
+        # a motorbike repair book (one row per ticket, bike and plate in one
+        # cell, no ticket code) is its own model: see repair.py
+        from datamate import repair
+        rep = repair.build(self)
+        if rep is not None:
+            self.lines, self.orders, self.sales_sheets = rep
+            return
         cands = []
         cands.append(self._try_pos_pair())
         cands.append(self._try_flat_lines())

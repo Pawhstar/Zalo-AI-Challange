@@ -22,6 +22,11 @@ def _num_patterns(q):
         m = re.search(pat, q)
         if m:
             return int(m.group(1))
+    # '3 mặt hàng nào bán chạy nhất', '5 khách nào mua nhiều tiền nhất'
+    m = re.search(r"(?<![\d/.,])(\d{1,2})\s+(?:mat hang|san pham|mon|khach( hang)?|nhan vien|tho)"
+                  r"\s+(?:nao|gi|mo|chi)\b.*\bnhat\b", q)
+    if m and 2 <= int(m.group(1)) <= 20:
+        return int(m.group(1))
     return None
 
 
