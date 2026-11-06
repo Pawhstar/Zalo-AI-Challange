@@ -633,17 +633,30 @@ class Business:
         for sig, lst in groups.items():
             base = {_akey(c): c for c in lst[0][1].columns}
             frames = []
-            for name, h in lst:
+            for i, (name, h) in enumerate(lst):
                 h = h.rename(columns={c: base[_akey(c)] for c in h.columns})
                 h["_per"] = [_per_of(name)] * len(h)
+                h["_src"] = i
                 frames.append(h)
             M = frames[0] if len(frames) == 1 else pd.concat(frames, ignore_index=True)
             nm = lst[0][0] if len(lst) == 1 else f"{lst[0][0]} (+{len(lst) - 1})"
             M.attrs["roles"] = schema.roles_for(
-                self._readme_sections, [c for c in M.columns if c != "_per"], nm)
+                self._readme_sections, [c for c in M.columns if c not in ("_per", "_src")], nm)
+            c_oid = col(M, "order_id")
+            # rulebook §8: blank cells on the later rows of a group repeat the
+            # first row, the order code included (exports with merged cells)
+            if c_oid is not None:
+                v = M[c_oid]
+                blank = v.isna() | v.astype(str).str.strip().isin(["", "nan", "None"])
+                if 0 < blank.mean() < 0.9 and not blank.iloc[0]:
+                    attrs = dict(M.attrs)
+                    M[c_oid] = v.where(~blank).groupby(M["_src"]).ffill()
+                    M.attrs.update(attrs)
+            attrs = dict(M.attrs)
+            M = M.drop(columns=["_src"])
+            M.attrs.update(attrs)
             # rulebook §8: two lines of the SAME order identical in every cell are
             # an export error, counted once (tables without an order code keep both)
-            c_oid = col(M, "order_id")
             if c_oid is not None:
                 has = M[c_oid].notna() & (M[c_oid].astype(str).str.strip() != "")
                 dup = M.astype(str).duplicated() & has
@@ -1212,6 +1225,34 @@ class Business:
         return best[1], best[2], best[3]
 
     # -------------------------------------------------- line finishing
+    def _canonical_items(self, s):
+        """Rulebook §8: names that only differ in how they are written
+        ('CÁNH GÀ CHIÊN NƯỚC MẮM', 'Canh ga chien nuoc mam') are one item. Map
+        every spelling to the catalog name, else to the most frequent spelling
+        that carries Vietnamese diacritics and is not all upper case."""
+        s = s.fillna("").astype(str)
+        key = s.map(lambda x: re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", fold(x))).strip())
+        cat = {}
+        if len(self.items):
+            for nm in self.items["item"]:
+                if nm:
+                    k = re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", fold(nm))).strip()
+                    cat.setdefault(k, nm)
+        canon = {}
+        counts = pd.DataFrame({"k": key, "s": s}).groupby(["k", "s"]).size()
+        for k, grp in counts.groupby(level=0):
+            if not k:
+                continue
+            if k in cat:
+                canon[k] = cat[k]
+                continue
+            spell = grp.droplevel(0).sort_values(ascending=False)
+            def rank(nm):
+                accented = nm != fold(nm) and any(ord(ch) > 127 for ch in nm)
+                return (accented, not nm.isupper(), spell[nm])
+            canon[k] = max(spell.index, key=rank)
+        return key.map(canon).where(key != "", s)
+
     def _finish_lines(self, L):
         """Attach order-level attributes from the lines themselves and derive
         revenue / valid / qty_base."""
@@ -1268,12 +1309,20 @@ class Business:
                     blank = is_code & (L["item_id"] == "")
                     L.loc[blank, "item_id"] = L.loc[blank, "item"]
                 L.loc[is_code, "item"] = L.loc[is_code, "item"].map(idmap)
+        L["item"] = self._canonical_items(L["item"])
         L = self._order_level(L)
 
         L["revenue"] = L["line_amount"]
         if "unit_price" in L.columns:
             L["revenue"] = L["revenue"].fillna(L["qty"] * L["unit_price"])
         L["revenue"] = pd.to_numeric(L["revenue"], errors="coerce")
+        # rows that are not goods: order-level voucher / loyalty points (written
+        # as negative amounts) and the delivery fee are not revenue (rulebook §1)
+        nongoods = L["item"].map(lambda x: bool(re.match(
+            r"^(voucher|ma giam gia|giam gia don|dung \d+ diem|tru \d+ diem|phi ship|phi giao( hang)?|ship)\b",
+            fold(x))))
+        L["non_goods"] = nongoods
+        L.loc[nongoods, "revenue"] = 0.0
         # base quantity: prefer the file's own converted column
         if "qty_base" not in L.columns:
             L["qty_base"] = np.nan

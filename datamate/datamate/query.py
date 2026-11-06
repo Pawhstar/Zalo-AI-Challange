@@ -459,7 +459,34 @@ def _in_data(c, p, as_of):
     return not (p.end < c["dmin"] or p.start > hi)
 
 
+LAST = {}
+
+
+def tag_of(r):
+    """Coarse category of the last answered question, for evaluation and the
+    abstain policy: measure, answer shape, filter kinds, comparison."""
+    S, ts = LAST.get("S"), LAST.get("ts")
+    if not S or r is None:
+        return None
+    parts = [S.get("measure", "?"), S.get("shape", "?")]
+    F = S.get("filters", {})
+    parts.append("+".join(sorted(F)) or "nofilter")
+    if ts is not None:
+        if ts.months:
+            parts.append("months")
+        elif ts.compare is not None:
+            parts.append("cmp")
+    parts.append(r[0])
+    return "q:" + ":".join(parts)
+
+
 def try_answer(b, q, as_of):
+    LAST.clear()
+    r = _try_answer(b, q, as_of)
+    return r
+
+
+def _try_answer(b, q, as_of):
     qn = normq(q)
     if _OUT_OF_SCOPE.search(qn):
         return None
@@ -467,9 +494,11 @@ def try_answer(b, q, as_of):
     if len(c["O"]) == 0:
         return None
     S = _parse(b, q, as_of)
+    LAST["S"] = S
     if "measure" not in S or S.get("unknown_group") or S.get("unknown_employee"):
         return None
     ts = parse_time(q, as_of)
+    LAST["ts"] = ts
     if ts.kind in ("default", "until"):
         return None
     F = S["filters"]

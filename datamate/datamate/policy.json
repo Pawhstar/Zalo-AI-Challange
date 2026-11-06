@@ -1,0 +1,406 @@
+{
+ "rule": "tags with train accuracy >= 0.5 over >= 5 answers (threshold chosen by leave-one-shop-family-out CV)",
+ "trusted": [
+  "debt:list",
+  "debt:number",
+  "debt:table",
+  "e:best_day:date",
+  "e:best_seller:string",
+  "e:cancel_rate:percent",
+  "e:gross_profit:number",
+  "e:n_orders_cancelled:number",
+  "e:price_on_day:number",
+  "e:stock_qty:number",
+  "e:top_customer:string",
+  "e:top_customers:list",
+  "e:top_sellers:list",
+  "pur:number",
+  "q:aov:value:nofilter:number",
+  "q:days_over:value:nofilter:number",
+  "q:orders:value:nofilter:number",
+  "q:orders:value:shift:number",
+  "q:orders_over:value:nofilter:number",
+  "q:qty:value:item:number",
+  "q:qty:value:nofilter:number",
+  "q:qty:value:size:number",
+  "q:revenue:pair:channel:list",
+  "q:revenue:pair:pay:list",
+  "q:revenue:share:channel:percent",
+  "q:revenue:share:cust_group:percent",
+  "q:revenue:share:group:percent",
+  "q:revenue:share:pay:percent",
+  "q:revenue:value:cust_group:number",
+  "q:revenue:value:employee:number",
+  "q:revenue:value:group:number",
+  "q:revenue:value:item:number",
+  "q:revenue:value:nofilter:cmp:percent",
+  "q:revenue:value:nofilter:months:list",
+  "q:revenue:value:nofilter:number",
+  "q:revenue:value:pay:number",
+  "q:revenue:value:shift:number",
+  "q:revenue:vs_pct:shift:cmp:percent",
+  "q:revenue:vs_pct:shift:percent"
+ ],
+ "train_stats": {
+  "debt:list": {
+   "correct": 7,
+   "wrong": 3
+  },
+  "debt:number": {
+   "correct": 46,
+   "wrong": 1
+  },
+  "debt:table": {
+   "correct": 6,
+   "wrong": 6
+  },
+  "e:avg_order_value:number": {
+   "correct": 0,
+   "wrong": 1
+  },
+  "e:avg_purchase_price:unanswerable": {
+   "correct": 1,
+   "wrong": 25
+  },
+  "e:best_day:date": {
+   "correct": 122,
+   "wrong": 14
+  },
+  "e:best_day:unanswerable": {
+   "correct": 2,
+   "wrong": 0
+  },
+  "e:best_employee:string": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "e:best_seller:string": {
+   "correct": 20,
+   "wrong": 9
+  },
+  "e:best_seller:unanswerable": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "e:cancel_rate:percent": {
+   "correct": 139,
+   "wrong": 0
+  },
+  "e:cancel_rate:unanswerable": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "e:debt:unanswerable": {
+   "correct": 2,
+   "wrong": 15
+  },
+  "e:delivery_rounds:unanswerable": {
+   "correct": 0,
+   "wrong": 2
+  },
+  "e:expiring_stock:unanswerable": {
+   "correct": 0,
+   "wrong": 1
+  },
+  "e:gross_profit:number": {
+   "correct": 5,
+   "wrong": 2
+  },
+  "e:gross_profit:unanswerable": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "e:monotonic:unanswerable": {
+   "correct": 0,
+   "wrong": 17
+  },
+  "e:most_profitable:string": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "e:n_customers_bought:number": {
+   "correct": 0,
+   "wrong": 32
+  },
+  "e:n_orders_cancelled:number": {
+   "correct": 100,
+   "wrong": 3
+  },
+  "e:n_orders_valid:number": {
+   "correct": 0,
+   "wrong": 5
+  },
+  "e:net_profit_month:unanswerable": {
+   "correct": 0,
+   "wrong": 3
+  },
+  "e:payments_collected:unanswerable": {
+   "correct": 1,
+   "wrong": 13
+  },
+  "e:prescription_ratio:unanswerable": {
+   "correct": 0,
+   "wrong": 2
+  },
+  "e:price_on_day:number": {
+   "correct": 44,
+   "wrong": 3
+  },
+  "e:purchase_qty:number": {
+   "correct": 0,
+   "wrong": 1
+  },
+  "e:purchase_qty:unanswerable": {
+   "correct": 0,
+   "wrong": 9
+  },
+  "e:purchase_value:number": {
+   "correct": 0,
+   "wrong": 9
+  },
+  "e:purchase_value:unanswerable": {
+   "correct": 1,
+   "wrong": 14
+  },
+  "e:qty_of_item:number": {
+   "correct": 2,
+   "wrong": 83
+  },
+  "e:rev_diff:number": {
+   "correct": 0,
+   "wrong": 1
+  },
+  "e:rev_growth_pct:percent": {
+   "correct": 1,
+   "wrong": 41
+  },
+  "e:revenue:number": {
+   "correct": 7,
+   "wrong": 305
+  },
+  "e:revenue_by_ingredient:unanswerable": {
+   "correct": 1,
+   "wrong": 1
+  },
+  "e:revenue_grouped:number": {
+   "correct": 0,
+   "wrong": 2
+  },
+  "e:stock_qty:number": {
+   "correct": 13,
+   "wrong": 1
+  },
+  "e:stock_qty:unanswerable": {
+   "correct": 4,
+   "wrong": 40
+  },
+  "e:stock_value:unanswerable": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "e:top_customer:string": {
+   "correct": 10,
+   "wrong": 5
+  },
+  "e:top_customer:unanswerable": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "e:top_customers:list": {
+   "correct": 10,
+   "wrong": 1
+  },
+  "e:top_sellers:list": {
+   "correct": 37,
+   "wrong": 14
+  },
+  "e:top_sellers:unanswerable": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "e:top_supplier:string": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "pur:number": {
+   "correct": 7,
+   "wrong": 0
+  },
+  "pur:string": {
+   "correct": 2,
+   "wrong": 0
+  },
+  "pur:unanswerable": {
+   "correct": 0,
+   "wrong": 1
+  },
+  "q:aov:value:cust_group:number": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "q:aov:value:nofilter:number": {
+   "correct": 160,
+   "wrong": 0
+  },
+  "q:buyers:value:nofilter:number": {
+   "correct": 0,
+   "wrong": 9
+  },
+  "q:buyers_min_orders:share:nofilter:percent": {
+   "correct": 3,
+   "wrong": 1
+  },
+  "q:days_over:value:nofilter:number": {
+   "correct": 19,
+   "wrong": 0
+  },
+  "q:orders:value:nofilter:number": {
+   "correct": 159,
+   "wrong": 1
+  },
+  "q:orders:value:shift:number": {
+   "correct": 15,
+   "wrong": 0
+  },
+  "q:orders:vs_pct:shift:cmp:percent": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "q:orders:vs_pct:shift:percent": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "q:orders_over:value:nofilter:number": {
+   "correct": 25,
+   "wrong": 0
+  },
+  "q:qty:value:item:number": {
+   "correct": 131,
+   "wrong": 3
+  },
+  "q:qty:value:nofilter:number": {
+   "correct": 21,
+   "wrong": 0
+  },
+  "q:qty:value:size:number": {
+   "correct": 45,
+   "wrong": 0
+  },
+  "q:revenue:pair:channel:list": {
+   "correct": 12,
+   "wrong": 0
+  },
+  "q:revenue:pair:pay:list": {
+   "correct": 11,
+   "wrong": 0
+  },
+  "q:revenue:share:channel:percent": {
+   "correct": 11,
+   "wrong": 0
+  },
+  "q:revenue:share:cust_group:percent": {
+   "correct": 14,
+   "wrong": 0
+  },
+  "q:revenue:share:group:percent": {
+   "correct": 33,
+   "wrong": 0
+  },
+  "q:revenue:share:group:unanswerable": {
+   "correct": 2,
+   "wrong": 0
+  },
+  "q:revenue:share:nofilter:percent": {
+   "correct": 0,
+   "wrong": 2
+  },
+  "q:revenue:share:pay:percent": {
+   "correct": 5,
+   "wrong": 0
+  },
+  "q:revenue:share:rx:percent": {
+   "correct": 3,
+   "wrong": 6
+  },
+  "q:revenue:value:channel:number": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "q:revenue:value:cust_group:number": {
+   "correct": 18,
+   "wrong": 0
+  },
+  "q:revenue:value:employee:number": {
+   "correct": 9,
+   "wrong": 0
+  },
+  "q:revenue:value:group:number": {
+   "correct": 22,
+   "wrong": 0
+  },
+  "q:revenue:value:ingredient:number": {
+   "correct": 11,
+   "wrong": 23
+  },
+  "q:revenue:value:item:cmp:percent": {
+   "correct": 0,
+   "wrong": 3
+  },
+  "q:revenue:value:item:number": {
+   "correct": 105,
+   "wrong": 10
+  },
+  "q:revenue:value:item:unanswerable": {
+   "correct": 2,
+   "wrong": 0
+  },
+  "q:revenue:value:nofilter:cmp:percent": {
+   "correct": 168,
+   "wrong": 6
+  },
+  "q:revenue:value:nofilter:cmp:unanswerable": {
+   "correct": 2,
+   "wrong": 0
+  },
+  "q:revenue:value:nofilter:months:list": {
+   "correct": 18,
+   "wrong": 4
+  },
+  "q:revenue:value:nofilter:months:number": {
+   "correct": 0,
+   "wrong": 4
+  },
+  "q:revenue:value:nofilter:number": {
+   "correct": 491,
+   "wrong": 34
+  },
+  "q:revenue:value:nofilter:unanswerable": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "q:revenue:value:pay:number": {
+   "correct": 6,
+   "wrong": 0
+  },
+  "q:revenue:value:rx:number": {
+   "correct": 3,
+   "wrong": 12
+  },
+  "q:revenue:value:shift:number": {
+   "correct": 37,
+   "wrong": 0
+  },
+  "q:revenue:value:size:number": {
+   "correct": 0,
+   "wrong": 1
+  },
+  "q:revenue:vs_pct:shift:cmp:percent": {
+   "correct": 10,
+   "wrong": 0
+  },
+  "q:revenue:vs_pct:shift:percent": {
+   "correct": 5,
+   "wrong": 0
+  }
+ }
+}
