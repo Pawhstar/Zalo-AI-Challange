@@ -8,6 +8,9 @@ from datamate.periods import (Period, resolve_period, month_period, quarter_peri
                      round_money, round2, prev_period)
 import datamate.metrics as M
 import datamate.intents as intents
+import datamate.query as query
+import datamate.debt as debt
+import datamate.purchases as purchases
 
 # ---------------------------------------------------------------- period glue
 
@@ -52,15 +55,43 @@ def _revenue_of(O, L):
 
 def answer(b, q, as_of):
     """Returns (type, value)."""
+    r = None
+    for mod in (debt, purchases, query):
+        try:
+            r = mod.try_answer(b, q, as_of)
+        except Exception:
+            r = None
+        if r is not None:
+            break
+    global _last_src
+    if r is not None:
+        _last_src = "q"
+        return r
+    _last_src = "e"
     intent, p = intents.classify(q, as_of, b)
     metric = p.get("metric", "revenue")
     per = period_for(q, as_of, b)
     if per is None:
         per = Period(pd.Timestamp(as_of), pd.Timestamp(as_of))
+    # records dated after 'today' have not happened yet (rulebook)
+    per = Period(per.start, min(per.end, pd.Timestamp(as_of).normalize()))
+    # A wrong answer costs -1 and an abstain 0: the legacy keyword router only
+    # answers intents it gets right more often than wrong on train.
+    if intent not in _LEGACY_TRUSTED:
+        return "abstain", None
     try:
-        return _dispatch(b, q, as_of, intent, metric, p, per)
-    except Exception as e:
-        return "unanswerable", {"reason": f"error: {e}"}
+        t, v = _dispatch(b, q, as_of, intent, metric, p, per)
+    except Exception:
+        return "abstain", None
+    if t == "unanswerable":       # legacy 'no data' is usually a parsing miss
+        return "abstain", None
+    return t, v
+
+
+# legacy intents with train accuracy above 50% (scratch fasteval, after query/debt/purchases)
+_LEGACY_TRUSTED = {"best_day", "top_sellers", "best_seller", "price_on_day", "top_customer",
+                   "top_customers", "n_orders_cancelled", "cancel_rate", "gross_profit",
+                   "best_employee"}
 
 
 def _dispatch(b, q, as_of, intent, metric, p, per):
