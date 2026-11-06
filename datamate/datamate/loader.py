@@ -169,6 +169,44 @@ def parse_date(v):
 _WALKIN = {"khach le", "le", "kl", "k l", "khach vang lai", "vang lai", "khach",
            "none", "nan", "", "-", "khach le -", "kh le"}
 
+
+# ------------------------------------------------------- customer identity
+# Rulebook §3: in a shop WITHOUT customer codes the name written on the order
+# identifies the customer, and two names that differ only in HOW they are
+# written are the same customer. The normalisation strips diacritics, case,
+# whitespace, brackets, dashes and dots; digits are kept, so a name differing
+# in a letter or a digit stays a different customer. A name carrying a phone
+# number and one without never merge.
+def person_key(name):
+    """(letters, digits) key for a customer name; equal keys = one customer."""
+    s = fold(name)
+    s = re.sub(r"[\(\)\[\]\-\.,:;'\"]", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    digits = re.sub(r"\D", "", s)
+    letters = re.sub(r"\s+", " ", re.sub(r"\d", "", s)).strip()
+    return letters, digits
+
+
+def canonical_customer_map(names):
+    """{spelling: representative spelling} for the customers in `names`."""
+    names = names.fillna("").astype(str)
+    df = pd.DataFrame({"k0": names.map(lambda s: person_key(s)[0]),
+                       "k1": names.map(lambda s: person_key(s)[1]),
+                       "s": names.values})
+    counts = df.groupby(["k0", "k1", "s"]).size()
+    canon = {}
+    for (k0, k1), grp in counts.groupby(["k0", "k1"]):
+        best = grp.sort_values(ascending=False)
+        top = best[best == best.max()].index
+        canon[(k0, k1)] = top[0][2]
+    return canon
+
+
+def apply_canonical(names, canon):
+    """Rewrite each spelling to the representative one."""
+    names = names.fillna("").astype(str)
+    return names.map(lambda s: canon.get(person_key(s), s) if s else s)
+
 CANCEL_TOK = ["đã hủy", "da huy", "hủy", "huy", "huỷ", "cancel", "bị hủy", "bi huy",
               "hủy đơn", "đơn hủy"]
 RETURN_TOK = ["trả hàng", "tra hang", "hoàn trả", "hoan tra", "hoàn lại", "hoan lai",
@@ -389,7 +427,9 @@ def _id_columns(df):
 _VOCAB_EXCLUDE = {
     "order_id": r"nhap|phieuthu|phieutra|kho|ncc|nhacungcap",
     "date": r"nhap|sinh|apdung|khaitruong|nhanviec|thoiviec|^han|hansudung|thu$|tra$",
-    "cust_name": r"^ma|nhom|loai",
+    # a customer column never holds money: 'KhachDaTra' (tiền khách đã trả)
+    # would otherwise match the bare word 'khách'
+    "cust_name": r"^ma|nhom|loai|datra|datr|tiendak|tiendatra|tiendatr|cotrakh|conno|dantra|phaitra",
 }
 
 def col_ex(df, role, exclude=()):
@@ -498,6 +538,21 @@ def df_from_sheet(raw):
     df.columns = cols
     df = df.iloc[1:].reset_index(drop=True)
     df = df.replace({"": None, "nan": None, "NaN": None, "None": None, "NaT": None})
+    # a long export re-prints the header row in the middle of the data; those
+    # rows carry the column labels as their values and must not be records
+    if len(df):
+        label = {c: norm(c) for c in df.columns}
+        mask = []
+        for _, r in df.iterrows():
+            filled = [(c, label.get(c)) for c in df.columns
+                      if r[c] is not None and norm(r[c]) != "" and c in label]
+            if len(filled) >= 3 and all(v is not None and norm(r[c]) == v for c, v in filled):
+                mask.append(True)
+            else:
+                mask.append(False)
+        mask = pd.Series(mask, index=df.index)
+        if mask.any():
+            df = df[~mask].reset_index(drop=True)
     # drop only rows that are entirely empty: a blank first cell is normal for
     # continuation rows of a multi-line order and for optional first columns
     df = df[df.notna().any(axis=1)].reset_index(drop=True)
@@ -733,14 +788,37 @@ class Business:
             # role. Reject any table that is itself a sales/lines table.
             if col(h, "line_amt") or col(h, "order_id") or col(h, "status"):
                 continue
-            c_unit = col_ex(h, "unit", [c_name])
-            c_base = col_ex(h, "base_unit", [c_name, c_unit] if c_unit else [c_name])
+            # The factor multiplies the BIG unit ('1 hộp = 6 cái': a sale line
+            # in 'hộp' holds 6 base units). A conversion table names that big
+            # unit in its own column; when the README marks it as 'đơn vị quy
+            # đổi' / 'đơn vị lớn' / 'ĐV nhập' the plain 'unit' column is the
+            # BASE unit instead, so the factor would be attached to the wrong
+            # unit and no line could ever be converted.
+            rr = _readme_roles(h)
+            big_col = (rr.get("big_unit") or [None])[0] if rr else None
+            c_base = col_ex(h, "base_unit", [c_name])
+            c_unit = col_ex(h, "unit", [c_name] + ([c_base] if c_base else []))
+            # the factor multiplies the big unit; when the README names that
+            # column explicitly, it wins over the plain 'unit' (base) column
+            if big_col:
+                c_unit = big_col
             t = pd.DataFrame()
             t["item"] = h[c_name].map(norm)
             t["unit"] = h[c_unit].map(norm) if c_unit else ""
             t["factor"] = h[c_rate].map(parse_num)
             t["base_unit"] = h[c_base].map(norm) if c_base else ""
             t = t[(t["factor"].notna()) & (t["factor"] > 0)]
+            # a factor may itself be a quantity with a unit ('15 vỉ'): the big
+            # unit holds that many units of the next size down
+            t["factor_unit"] = ""
+            if c_rate:
+                raw = h[c_rate].fillna("").astype(str)
+                mixed = raw.map(_QTY_UNIT_RE.match)
+                has_unit = mixed.map(lambda m: m is not None)
+                if has_unit.any():
+                    t.loc[has_unit, "factor"] = mixed[has_unit].map(lambda m: float(m.group(1)))
+                    t.loc[has_unit, "factor_unit"] = mixed[has_unit].map(lambda m: norm(m.group(2)))
+                    t = t[(t["factor"].notna()) & (t["factor"] > 0)]
             # a genuine conversion table is small
             if len(t) > 20000:
                 continue
@@ -752,6 +830,15 @@ class Business:
             for item, unit, factor in zip(self.units["item"], self.units["unit"],
                                           self.units["factor"]):
                 self._unit_factor[(item, unit)] = float(factor)
+        self._fmap = {(fold(i), fold(u)): f for (i, u), f in self._unit_factor.items()
+                      if i and u}
+        self._unit_factor_chain = {}
+        if len(self.units) and "factor_unit" in self.units.columns:
+            for item, unit, factor, fu in zip(self.units["item"], self.units["unit"],
+                                              self.units["factor"],
+                                              self.units["factor_unit"]):
+                if fu:
+                    self._unit_factor_chain[(fold(item), fold(unit))] = (float(factor), fold(fu))
         # units named in the README ("1 bao = 5 kg" rules)
         readme_units = set()
         for m in re.finditer(r"1\s+(\S+)\s*=\s*\d+(?:\.\d+)?\s+(\S+)", self.readme):
@@ -910,6 +997,18 @@ class Business:
                 walk = walk | (O["customer_id"].fillna("").astype(str) == "")
             O["walk_in"] = walk
             O["customer"] = np.where(walk, "Khách lẻ", cur)
+            # rulebook §3: in a shop without customer codes, names that differ
+            # only in how they are written are one customer; the representative
+            # spelling is the shop's own most frequent one. A shop WITH codes
+            # needs no merging: the code decides identity.
+            if not has_codes:
+                canon = canonical_customer_map(O["customer"])
+                O["customer"] = apply_canonical(O["customer"], canon)
+                # the lines carry their own copy of the name: same rewrite, so
+                # orders and lines agree on who the customer is
+                if len(self.lines) and "customer" in self.lines.columns:
+                    self.lines["customer"] = apply_canonical(
+                        self.lines["customer"], canon)
         if "status" in O.columns:
             O["is_valid"] = ~O["status"].isin(["cancelled", "returned"])
         else:
@@ -1323,12 +1422,67 @@ class Business:
             fold(x))))
         L["non_goods"] = nongoods
         L.loc[nongoods, "revenue"] = 0.0
-        # base quantity: prefer the file's own converted column
+        # base quantity: prefer the file's own converted column, else convert
+        # the raw quantity with the shop's conversion table (rulebook §10)
         if "qty_base" not in L.columns:
             L["qty_base"] = np.nan
         L["qty_base"] = pd.to_numeric(L["qty_base"], errors="coerce")
         if L["qty_base"].isna().all():
             L["qty_base"] = L["qty"]
+        L = self._convert_qty(L)
+        return L
+
+    def _factor_to_base(self, item, unit, base_unit):
+        """How many base units one `unit` of `item` holds.
+
+        Straight from the conversion table when it names the base unit; when
+        the factor itself carries a unit ('1 hộp = 15 vỉ') the chain is
+        followed through the intermediate unit."""
+        fmap = getattr(self, "_fmap", {}) or {}
+        chain = getattr(self, "_unit_factor_chain", {}) or {}
+        k = (fold(item), fold(unit))
+        if k in fmap and base_unit and fold(base_unit) == fold(unit):
+            return 1.0                                    # already the base unit
+        if k in fmap:
+            direct = fmap[k]
+            if not base_unit or fold(base_unit) == fold(unit):
+                return direct
+            # a factor that names another unit: follow the chain
+            if k in chain:
+                mult, mid = chain[k]
+                sub = self._factor_to_base(item, mid, base_unit)
+                if sub is not None:
+                    return mult * sub
+            return direct
+        return None
+
+    def _convert_qty(self, L):
+        """Convert the raw quantity of a line into the item's base unit.
+
+        A sale line in a big unit ('1 hộp = 6 cái') holds that many base
+        units. The file's own converted column wins; where the file has none,
+        the conversion table gives the factor. A line whose unit IS the base
+        unit is already converted."""
+        if not (getattr(self, "_unit_factor", {}) or {}) or "qty" not in L.columns:
+            return L
+        base = dict(zip(self.items["item"], self.items["base_unit"])) if len(self.items) else {}
+        items = {fold(it): fold(bu) for it, bu in
+                 zip(self.items["item"], self.items.get("base_unit", [""] * len(self.items)))} \
+            if len(self.items) else {}
+        unit = L["unit"].fillna("").astype(str).map(fold)
+        it = L["item"].fillna("").astype(str).map(fold)
+        base_u = it.map(items)
+        # only where the file's converted column is missing or equals the raw
+        need = L["qty_base"].isna() | (L["qty_base"] - L["qty"]).abs().lt(1e-9)
+        f = pd.Series(np.nan, index=L.index, dtype=float)
+        for i in np.flatnonzero(need.to_numpy()):
+            if not (it.iloc[i] and unit.iloc[i]):
+                continue
+            fv = self._factor_to_base(it.iloc[i], unit.iloc[i], base_u.iloc[i])
+            if fv is not None and fv != 1.0:
+                f.iloc[i] = fv
+        conv = f.notna()
+        L.loc[conv, "qty_base"] = L.loc[conv, "qty"] * f[conv]
         return L
 
     def _order_level(self, L):

@@ -43,16 +43,16 @@
  ],
  "train_stats": {
   "debt:list": {
-   "correct": 7,
-   "wrong": 3
+   "correct": 10,
+   "wrong": 0
   },
   "debt:number": {
    "correct": 46,
    "wrong": 1
   },
   "debt:table": {
-   "correct": 6,
-   "wrong": 6
+   "correct": 9,
+   "wrong": 3
   },
   "e:avg_order_value:number": {
    "correct": 0,
@@ -75,8 +75,8 @@
    "wrong": 0
   },
   "e:best_seller:string": {
-   "correct": 20,
-   "wrong": 9
+   "correct": 25,
+   "wrong": 4
   },
   "e:best_seller:unanswerable": {
    "correct": 1,
@@ -143,8 +143,8 @@
    "wrong": 2
   },
   "e:price_on_day:number": {
-   "correct": 44,
-   "wrong": 3
+   "correct": 45,
+   "wrong": 2
   },
   "e:purchase_qty:number": {
    "correct": 0,
@@ -164,7 +164,7 @@
   },
   "e:qty_of_item:number": {
    "correct": 2,
-   "wrong": 83
+   "wrong": 80
   },
   "e:rev_diff:number": {
    "correct": 0,
@@ -211,8 +211,8 @@
    "wrong": 1
   },
   "e:top_sellers:list": {
-   "correct": 37,
-   "wrong": 14
+   "correct": 43,
+   "wrong": 8
   },
   "e:top_sellers:unanswerable": {
    "correct": 1,
@@ -276,7 +276,7 @@
   },
   "q:qty:value:item:number": {
    "correct": 131,
-   "wrong": 3
+   "wrong": 6
   },
   "q:qty:value:nofilter:number": {
    "correct": 21,
