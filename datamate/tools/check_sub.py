@@ -1,5 +1,9 @@
 """Validate a submission.jsonl against the official format rules."""
 import json, sys, re, collections
+
+from _console import setup_io
+
+setup_io()
 sub, qfile = sys.argv[1], sys.argv[2]
 qids = [json.loads(l)["id"] for l in open(qfile, encoding="utf-8") if l.strip()]
 types = collections.Counter()

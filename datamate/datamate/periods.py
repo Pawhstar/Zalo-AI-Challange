@@ -182,16 +182,52 @@ def _quarter_of(q, y, as_of):
     return quarter_period(q, yy)
 
 
+def _yy(m):
+    """'3/26' -> '3/2026'. Only when the second number cannot be a month
+    (13..39), so a day/month like '5/06' is left alone."""
+    a, b = int(m.group(1)), int(m.group(2))
+    if 1 <= a <= 12 and 13 <= b <= 39:
+        return f"{a}/20{b:02d}"
+    return m.group(0)
+
+
 def _norm_text(q):
     s = normq(q)
     # common typos / shorthands
     s = re.sub(r"\bthangs\b", "thang", s)
+    # month written with its year, glued or dashed: 'th4/2026', 't8/2025',
+    # 'th 3/26', '7-2026' -> 'thang 4/2026' ...
+    s = re.sub(r"(?<![\d/])(\d{1,2})\s*-\s*((?:19|20)\d\d)(?![\d/])", r"\1/\2", s)
+    s = re.sub(r"(?<![\d/])(\d{1,2})\s*/\s*(\d{2})(?![\d/])", _yy, s)
+    s = re.sub(r"\b(?:th|t)\s*(?=\d{1,2}\s*/\s*(?:19|20)\d\d(?![\d/]))", "thang ", s)
+    # a bare 'M/YYYY' (not part of 'd/m/yyyy') is a month
+    s = re.sub(r"(?<![\d/])(?<!quy )(?<!tuan )(?<!q)\b(\d{1,2})\s*/\s*((?:19|20)\d\d)(?![\d/])",
+               lambda m: f"thang {m.group(1)}/{m.group(2)}" if 1 <= int(m.group(1)) <= 12 else m.group(0), s)
+    s = re.sub(r"\bthang\s+thang\b", "thang", s)
+    s = re.sub(r"\bq\s*([1-4])\s*/\s*((?:19|20)\d\d)\b", r"quy \1/\2", s)       # 'Q1/2026'
+    # 'so vs', 'so dới', 'so vói' (typos of 'so với') -> 'so voi'
+    s = re.sub(r"\bso\s+(vs|doi|voi|vo|vooi|voii)\b", "so voi", s)
+    # 'cùng tháng năm trước' = the same month a year earlier
+    s = re.sub(r"\bcung thang (cua )?nam (truoc|ngoai|roi)\b", "cung ky nam truoc", s)
+    # central-Vietnam 'ni' = 'này' ('tháng ni', 'bữa ni', 'năm ni', 'tuần ni')
+    s = re.sub(r"\b(thang|bua|nam|tuan|quy|hom)\s+ni\b", r"\1 nay", s)
     s = re.sub(r"\bth\b(?=\s*(\d|nay|truoc|trc))", "thang", s)
     s = re.sub(r"\b(hnay|hom nayf?|bua nay|ngay hom nay)\b", "hom nay", s)
     s = re.sub(r"\b(hqua|hom wa|bua qua|bua hom qua)\b", "hom qua", s)
     s = re.sub(r"\b(trc|truoc|roi|vua roi|vua qua)\b", "truoc", s)
     s = re.sub(r"\bnam ngoai\b", "nam truoc", s)
+    # months listed with the year written once: 'th7, th8, th9/2026',
+    # 'tháng 7, 8 và 9/2026' -> 'thang 7/2026 thang 8/2026 thang 9/2026'
+    s = re.sub(r"\b((?:thang|th|t)\s*\d{1,2}(?:\s+(?:va\s+)?(?:(?:thang|th|t)\s*)?\d{1,2})*)\s+(?:va\s+)?"
+               r"thang\s+(\d{1,2})/((?:19|20)\d\d)\b", _month_list, s)
     return s
+
+
+def _month_list(m):
+    nums = [int(x) for x in re.findall(r"\d{1,2}", m.group(1))] + [int(m.group(2))]
+    if not all(1 <= n <= 12 for n in nums) or any(b <= a for a, b in zip(nums, nums[1:])):
+        return m.group(0)
+    return " ".join(f"thang {n}/{m.group(3)}" for n in nums)
 
 
 def _relative(s, as_of):
@@ -221,7 +257,8 @@ def _relative(s, as_of):
     if re.search(r"\bhom qua\b", s):
         d = T - pd.Timedelta(days=1)
         return Period(d, d), "day"
-    if re.search(r"\bhom nay\b", s):
+    # 'năm nay / tháng này tính tới hôm nay': 'hôm nay' only ends the period
+    if re.search(r"\bhom nay\b", s) and not re.search(r"\b(thang|nam|tuan|quy) nay\b", s):
         return Period(T, T), "day"
     if re.search(r"\btuan (truoc|tr)\b|\btuan roi\b", s):
         ws = week_start(T)
@@ -263,7 +300,8 @@ def _tet(s, as_of):
 
 
 _CMP_SPLIT = re.compile(r"\b(so voi|hon hay kem|tang hay giam|tang hay la giam|tang/giam|hon/kem|"
-                        r"cung ky|so cung ky)\b")
+                        r"cung ky|so cung ky|len hay xuong|cao hay thap|"
+                        r"so (?=(?:thang|tuan|quy|nam) (?:lien )?(?:truoc|roi|ngoai)\b))")
 
 
 def parse_time(q, as_of):
@@ -295,7 +333,9 @@ def _parse_main(s, T):
         until_day = _date(m.group(3), m.group(4), m.group(5), T)
     elif re.search(r"(tinh den|den het|cuoi ngay|toi gio|hien tai|bay gio|hien con|con lai|"
                     r"dang con|con bao nhieu|con no|con ton)", s) \
-            and re.search(r"\b(hom nay|hien tai|bay gio|toi gio|hien con|con)\b", s):
+            and re.search(r"\b(hom nay|hien tai|bay gio|toi gio|hien con|con)\b", s) \
+            and not (re.search(r"\b(thang|nam|tuan|quy) nay\b|\bdau (thang|nam|tuan|quy)\b", s)
+                     and not re.search(r"\b(con|no|ton|thieu|chua)\b", s)):
         until_day = T
     if until_day is not None and re.search(r"\btu\s*(ngay\s*\d|\d|dau|thang|hom|tuan)", s):
         until_day = None                       # 'từ X đến hết Y' is a range, not a status
@@ -440,7 +480,7 @@ def _compare(s, spec, T):
             return previous_of(p, "quarter_td" if kind == "quarter_td" else "quarter", T)
         return Period(_shift_years(p.start, -1), _shift_years(p.end, -1))
     # explicit second period: 'so với tháng M/Y', 'so với quý Q/Y'
-    m = re.search(r"so voi\s*thang\s*(\d{1,2})(?:\s*(?:/|nam|-)\s*" + _Y + r")?", s)
+    m = re.search(r"\bso(?: voi)?\s*thang\s*(\d{1,2})(?:\s*(?:/|nam|-)\s*" + _Y + r")?", s)
     if m:
         q = _month_of(m.group(1), m.group(2), T)
         if q is not None:
@@ -452,7 +492,8 @@ def _compare(s, spec, T):
             return q
     if not re.search(r"so voi|hon hay kem|tang hay giam|tang giam|chenh lech|thay doi|tang truong|"
                      r"tang bao nhieu|giam bao nhieu|hon bao nhieu|kem bao nhieu|ky truoc|lien truoc|"
-                     r"tang/giam|hon/kem|tang hay la giam", s):
+                     r"tang/giam|hon/kem|tang hay la giam|len hay xuong|cao hay thap|"
+                     r"\bso (thang|tuan|quy|nam) (lien )?(truoc|roi|ngoai)\b|(thang|tuan|quy|nam) truoc do\b", s):
         return None
     return previous_of(p, kind, T)
 

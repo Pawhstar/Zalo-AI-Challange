@@ -3,3 +3,10 @@ __pycache__/
 *.pyc
 .idea/
 Train/
+train+public_test/
+bizcache*/
+dump*.jsonl
+result*/
+.venv/
+.shim/
+.uvcache/

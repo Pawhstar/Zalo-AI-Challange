@@ -1,7 +1,15 @@
 """Evaluate engine on train with pickled Business objects (loader output cached).
 usage: python fasteval.py [--rebuild] [--only biz_101,biz_102] [--dump out.jsonl]"""
 import sys, os, json, time, pickle, collections, argparse, importlib
-ROOT = r"C:/Users/start/Downloads/Zalo-AI-Challange"
+
+from _console import setup_io
+
+setup_io()
+
+import os as _os
+# repo root (folder holding Train/ and datamate/); override with DATAMATE_ROOT
+ROOT = _os.environ.get("DATAMATE_ROOT") or _os.path.dirname(_os.path.dirname(
+    _os.path.dirname(_os.path.abspath(__file__)))).replace("\\", "/")
 sys.path.insert(0, ROOT + "/datamate")
 os.environ["CALENDAR_CSV"] = ROOT + "/Train/train/calendar.csv"
 from datamate.loader import Business

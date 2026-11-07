@@ -61,7 +61,7 @@ python tools/make_policy.py dump_raw.jsonl 0.5 5                           # ghi
 python tools/fasteval.py                                                   # điểm có abstain
 python tools/diag.py public_test                                           # kiểm tra nhất quán loader, không cần nhãn
 ```
-Các script trong `tools/` có đường dẫn cứng tới `C:/Users/start/Downloads/Zalo-AI-Challange` — sửa biến `ROOT` nếu chuyển máy.
+Các script trong `tools/` tự tìm thư mục gốc repo (thư mục chứa `Train/` và `datamate/`); đặt `DATAMATE_ROOT` nếu dữ liệu nằm chỗ khác. Cache các shop đã load nằm ở `datamate/tools/bizcache*/` (git bỏ qua).
 
 ## 5. Bài học
 
@@ -113,8 +113,7 @@ thì không thực tế. Mục tiêu dưới đây chia theo nấc; mỗi nấc 
 | 16/11 | Nộp solution (Docker + checksum + link Drive) |
 
 ## 7. Việc cần lưu ý ngay
-- Commit `1144efc` ("?") đã đưa `Train.zip`, `Train/train.zip`, `train+public_test.zip` (~1,5 GB) và
-  `__pycache__` vào git. **Đừng push** nhánh này: GitHub từ chối file > 100 MB, và luật thi cấm phát tán dữ liệu.
-  Nên gỡ các file đó khỏi lịch sử (ví dụ `git reset --soft d3978e3`/`58bdf24` rồi commit lại không kèm zip) và thêm
-  `*.zip`, `__pycache__/`, `Train/` vào `.gitignore`.
+- **Đã xử lý: lịch sử git sạch, đã force-push, repo GitHub private; tag `backup-before-rewrite-*` chỉ còn ở máy.**
+  Các commit cũ chứa ~1,5 GB dữ liệu (`d3978e3`, `6c106d5`, `58bdf24`, `88671bd`) chỉ còn trong
+  `refs/original/*` và tag `backup-before-rewrite-*` cục bộ; `HEAD`, `main` và `origin` không còn file zip/xlsx nào.
 - Lượt nộp public ngày 06/11: đã dùng 3/5 (v1, v2, v3). File nộp ở `submissions/`.

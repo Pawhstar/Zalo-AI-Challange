@@ -22,7 +22,18 @@ def fold(s):
 _TYPO = {"cuwar": "cua", "hown": "hon", "nhiu": "nhieu", "bnhiu": "bao nhieu", "bn": "bao nhieu",
          "bnhieu": "bao nhieu", "dc": "duoc", "dk": "duoc", "ko": "khong", "k": "khong",
          "dthu": "doanh thu", "sl": "so luong", "trc": "truoc", "hnay": "hom nay",
-         "hqua": "hom qua", "z": "vay", "sp": "san pham", "tb": "trung binh"}
+         "hqua": "hom qua", "z": "vay", "sp": "san pham", "tb": "trung binh",
+         # chat spellings seen in the public split (words train never uses)
+         "dh": "don hang", "mik": "minh", "mk": "minh", "nhut": "nhat", "nhta": "nhat",
+         "trog": "trong", "kua": "cua", "cko": "cho", "kon": "con", "wan": "quan",
+         "jum": "giup", "jup": "giup", "tih": "tinh", "nuot": "luot", "ncc": "nha cung cap",
+         "ngui": "nguoi", "zo": "vo", "zi": "gi", "mun": "muon", "sop": "shop", "nv": "nhan vien",
+         "kac": "cac", "bna": "ban", "lne": "len", "lenn": "len", "nheiu": "nhieu", "zay": "vay",
+         "dzay": "vay", "za": "vay", "dza": "vay", "wa": "qua", "qa": "qua", "tog": "tong",
+         "cog": "cong", "nhug": "nhung", "dag": "dang", "tug": "tung", "hagn": "hang",
+         "duco": "duoc", "bnhui": "bao nhieu", "bq": "binh quan", "dt": "doanh thu",
+         "doanhthu": "doanh thu", "caonhat": "cao nhat", "bannhieu": "ban nhieu",
+         "ngaynao": "ngay nao", "nhieudon": "nhieu don", "rui": "roi", "xo": "so"}
 
 
 def _detelex(w):
@@ -47,7 +58,16 @@ def normq(s):
     for w in s.split():
         w = _detelex(w)
         words.append(_TYPO.get(w, w))
-    return re.sub(r"\s+", " ", " ".join(words)).strip()
+    s = re.sub(r"\s+", " ", " ".join(words)).strip()
+    # central-Vietnam 'mô' / 'chi' = 'nào' / 'gì' after the thing asked about
+    # ('ngày mô', 'thợ mô', 'mặt hàng chi'); 'chi' alone is also 'chị', so it
+    # is only rewritten in that position
+    s = re.sub(r"\b(ngay|thang|tho|hang|mat hang|mon|san pham|khach|nhan vien|dong xe|xe|"
+               r"ca|gio|tuan|quy|nam|nguoi|loai|nhom|kenh|nha cung cap)\s+(mo|chi)\b"
+               r"(?!\s+(tieu|nhanh|phi|tra|tien|nhieu|it|het|bao))", r"\1 nao", s)
+    # 'hôm nào', 'bữa nào' = 'ngày nào'
+    s = re.sub(r"\b(hom|bua) nao\b", "ngay nao", s)
+    return s
 
 
 def fold_list(lst):
