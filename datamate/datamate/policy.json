@@ -17,6 +17,11 @@
   "fee:points:number",
   "fee:ship:number",
   "fee:voucher:number",
+  "lot:expiring_capital:number",
+  "lot:expiring_count:number",
+  "lot:expiring_items:list",
+  "lot:nearest_expiry:date",
+  "lot:no_data:unanswerable",
   "pb:bh_back:number",
   "pb:bh_rate:percent",
   "pb:bh_top_dong:string",
@@ -28,6 +33,7 @@
   "pb:gop_left_cust:number",
   "pb:gop_overdue:number",
   "pb:gop_overdue_cust:number",
+  "pe:change:percent",
   "ph:dong_qty:number",
   "ph:group_best:string",
   "ph:group_rev:number",
@@ -98,6 +104,10 @@
   "fee:points:number",
   "fee:ship:number",
   "fee:voucher:number",
+  "lot:expiring_capital:number",
+  "lot:expiring_count:number",
+  "lot:expiring_items:list",
+  "lot:no_data:unanswerable",
   "pb:bh_back:number",
   "pb:bh_rate:percent",
   "pb:bh_top_dong:string",
@@ -166,7 +176,7 @@
   },
   "e:best_day:date": {
    "correct": 122,
-   "wrong": 8
+   "wrong": 3
   },
   "e:best_day:unanswerable": {
    "correct": 2,
@@ -266,7 +276,7 @@
   },
   "e:qty_of_item:number": {
    "correct": 2,
-   "wrong": 83
+   "wrong": 41
   },
   "e:rev_diff:number": {
    "correct": 0,
@@ -274,11 +284,11 @@
   },
   "e:rev_growth_pct:percent": {
    "correct": 1,
-   "wrong": 41
+   "wrong": 2
   },
   "e:revenue:number": {
    "correct": 7,
-   "wrong": 157
+   "wrong": 154
   },
   "e:revenue_by_ingredient:unanswerable": {
    "correct": 1,
@@ -293,8 +303,8 @@
    "wrong": 1
   },
   "e:stock_qty:unanswerable": {
-   "correct": 4,
-   "wrong": 29
+   "correct": 3,
+   "wrong": 25
   },
   "e:top_customer:string": {
    "correct": 10,
@@ -318,6 +328,30 @@
   },
   "e:top_supplier:string": {
    "correct": 1,
+   "wrong": 0
+  },
+  "lot:expiring_capital:number": {
+   "correct": 1,
+   "wrong": 0
+  },
+  "lot:expiring_count:number": {
+   "correct": 2,
+   "wrong": 0
+  },
+  "lot:expiring_items:list": {
+   "correct": 2,
+   "wrong": 0
+  },
+  "lot:nearest_expiry:date": {
+   "correct": 5,
+   "wrong": 0
+  },
+  "lot:no_data:unanswerable": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pe:change:percent": {
+   "correct": 84,
    "wrong": 0
   },
   "pur:number": {
@@ -435,10 +469,6 @@
   "q:revenue:value:ingredient:number": {
    "correct": 24,
    "wrong": 10
-  },
-  "q:revenue:value:item:cmp:percent": {
-   "correct": 0,
-   "wrong": 3
   },
   "q:revenue:value:item:number": {
    "correct": 105,

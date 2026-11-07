@@ -4,6 +4,11 @@
   "fee:points:number",
   "fee:ship:number",
   "fee:voucher:number",
+  "lot:expiring_capital:number",
+  "lot:expiring_count:number",
+  "lot:expiring_items:list",
+  "lot:nearest_expiry:date",
+  "lot:no_data:unanswerable",
   "pb:bh_back:number",
   "pb:bh_rate:percent",
   "pb:bh_top_dong:string",
@@ -15,6 +20,7 @@
   "pb:gop_left_cust:number",
   "pb:gop_overdue:number",
   "pb:gop_overdue_cust:number",
+  "pe:change:percent",
   "ph:dong_qty:number",
   "ph:group_best:string",
   "ph:group_rev:number",
@@ -63,6 +69,26 @@
    "correct": 3,
    "wrong": 0
   },
+  "lot:expiring_capital:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "lot:expiring_count:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "lot:expiring_items:list": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "lot:nearest_expiry:date": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "lot:no_data:unanswerable": {
+   "correct": 3,
+   "wrong": 0
+  },
   "pb:bh_back:number": {
    "correct": 3,
    "wrong": 0
@@ -105,6 +131,10 @@
   },
   "pb:gop_overdue_cust:number": {
    "correct": 3,
+   "wrong": 0
+  },
+  "pe:change:percent": {
+   "correct": 4,
    "wrong": 0
   },
   "ph:dong_qty:number": {
