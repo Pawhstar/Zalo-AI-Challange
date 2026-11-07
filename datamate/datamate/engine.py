@@ -15,6 +15,8 @@ import datamate.fees as fees
 import datamate.repair_answer as repair_answer
 import datamate.extra as extra
 import datamate.phone as phone
+import datamate.price_effect as price_effect
+import datamate.pharmacy_lots as pharmacy_lots
 from types import SimpleNamespace as _NS
 _TRAP = _NS(try_answer=extra.try_trap)
 
@@ -68,7 +70,7 @@ def raw_answer(b, q, as_of):
     question category ('q:revenue:value:group:number', 'debt:number', 'e:best_day')."""
     global _last_src, _last_tag
     for name, mod in (("trap", _TRAP), ("rep", repair_answer), ("fee", fees), ("ph", phone), ("debt", debt),
-                      ("pur", purchases), ("q", query), ("x", extra)):
+                      ("pur", purchases), ("pe", price_effect), ("lot", pharmacy_lots), ("q", query), ("x", extra)):
         try:
             r = mod.try_answer(b, q, as_of)
         except Exception:
