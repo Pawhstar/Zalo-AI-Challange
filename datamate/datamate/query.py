@@ -470,6 +470,28 @@ def _in_data(c, p, as_of):
 
 LAST = {}
 
+_RESID = (r"\bkhach (hang )?(nu|nam(?!\s*(nay|truoc|ngoai|sau|roi|\d))|o|tai|ben|quan|phuong|duong|dia chi|que)\b"
+          r"|\bduong [a-z]+ [a-z]+|\bdia chi\b"
+          r"|\b(bao nhieu|bnhiu|bao nheiu|nhieu|tat ca|tong cong)\s+(ly|coc|cai|chiec|hop|chai|lon|goi|thung|bich|"
+          r"tui|kg|vi|vien|suat|to|dia|lit|cuon|tam|dien thoai)\b"
+          r"|\bmay (ly|coc|cai|chiec|hop|chai|lon|goi|thung|bich|tui|kg|vi|vien|suat|to|lit|cuon|tam)\b"
+          r"|\b(bao nhieu|bnhiu) may [a-z]|\bban (ra|duoc|dc) may (chiec|may|dien thoai)\b"
+          r"|cat hang|nhap hang|lay hang|nhap ve|tien nhap|tien von|gia von|\bloi\b|\blai gop\b"
+          r"|khach (phai|can) tra|thu may cu|tien coc|dat coc")
+
+
+def _residual(q, qn):
+    """A total-revenue reading of a question that still names something the
+    router did not turn into a filter: a customer trait or address, a count
+    of units, purchases, profit, an item name written after 'bán'."""
+    if re.search(_RESID, qn):
+        return True
+    # 'bán Canh chua cá tràu được bao nhiêu tiền': a capitalised name after bán
+    if re.search(r"\b(bán|ban)\s+(?!(được|đc|dc|ra|hàng|hang)\b)[A-ZĐÂĂÊÔƠƯÁÀẢÃẠÉÈÍÌÓÒÚÙÝ][^\s,?]*(\s+[^\s,?]+){0,6}?\s+(được|đc|dc|ra)\b", q):
+        return True
+    m = re.search(r"\b(mặt hàng|sản phẩm|món|sp|mat hang|san pham|mon)\s+\S", q, re.I)
+    return bool(m) and not re.search(r"(mặt hàng|sản phẩm|món|sp|mat hang|san pham|mon)\s+(nào|nao|gì|gi)\b", q, re.I)
+
 
 def tag_of(r):
     """Coarse category of the last answered question, for evaluation and the
@@ -480,6 +502,8 @@ def tag_of(r):
     parts = [S.get("measure", "?"), S.get("shape", "?")]
     F = S.get("filters", {})
     parts.append("+".join(sorted(F)) or "nofilter")
+    if not F and LAST.get("q") and S.get("measure") in ("revenue", "aov", "orders")             and _residual(LAST["q"], normq(LAST["q"])):
+        parts.append("resid")
     if ts is not None:
         if ts.months:
             parts.append("months")
@@ -492,6 +516,7 @@ def tag_of(r):
 def try_answer(b, q, as_of):
     LAST.clear()
     r = _try_answer(b, q, as_of)
+    LAST["q"] = q
     return r
 
 

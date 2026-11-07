@@ -14,6 +14,7 @@ import datamate.purchases as purchases
 import datamate.fees as fees
 import datamate.repair_answer as repair_answer
 import datamate.extra as extra
+import datamate.phone as phone
 from types import SimpleNamespace as _NS
 _TRAP = _NS(try_answer=extra.try_trap)
 
@@ -66,7 +67,7 @@ def raw_answer(b, q, as_of):
     """(type, value, tag) before the abstain policy. tag names the route and
     question category ('q:revenue:value:group:number', 'debt:number', 'e:best_day')."""
     global _last_src, _last_tag
-    for name, mod in (("trap", _TRAP), ("rep", repair_answer), ("fee", fees), ("debt", debt),
+    for name, mod in (("trap", _TRAP), ("rep", repair_answer), ("fee", fees), ("ph", phone), ("debt", debt),
                       ("pur", purchases), ("q", query), ("x", extra)):
         try:
             r = mod.try_answer(b, q, as_of)

@@ -41,9 +41,25 @@ def _named(O):
 
 def try_trap(b, q, as_of):
     """Runs before every other module: a judgement no book records."""
-    if re.search(_TRAIT, normq(q)):
+    if re.search(r"\b(?:" + _TRAIT + r")\b", normq(q)):
         return "unanswerable", {"reason": "the data records no such judgement"}, "x:trait:unanswerable"
+    qn = normq(q)
+    # customers by gender or by address: unanswerable unless a table records it
+    if re.search(r"\bkhach (hang )?(nu|nam)\b(?!\s*(nay|truoc|ngoai|sau|roi|\d))", qn) and \
+            not _records(b, r"gioi tinh|gender|\bnam/nu\b"):
+        return "unanswerable", {"reason": "the shop records no customer gender"}, "x:no_attr:unanswerable"
+    if re.search(r"\bkhach (hang )?(o|tai|ben|song o) (duong |pho |phuong |quan )?[a-z]", qn) and \
+            not _records(b, r"dia chi|\bduong\b|phuong|address"):
+        return "unanswerable", {"reason": "the shop records no customer address"}, "x:no_attr:unanswerable"
     return None
+
+
+def _records(b, rx):
+    for _, h in b._iter_tables():
+        for c in h.columns:
+            if re.search(rx, fold(str(c))):
+                return True
+    return False
 
 
 def _records_groups(b):

@@ -4,6 +4,31 @@
   "fee:points:number",
   "fee:ship:number",
   "fee:voucher:number",
+  "pb:bh_back:number",
+  "pb:bh_rate:percent",
+  "pb:bh_top_dong:string",
+  "pb:bh_visits:number",
+  "pb:debt_cust:number",
+  "pb:debt_total:number",
+  "pb:gop_due_count:number",
+  "pb:gop_left:number",
+  "pb:gop_left_cust:number",
+  "pb:gop_overdue:number",
+  "pb:gop_overdue_cust:number",
+  "ph:dong_qty:number",
+  "ph:group_best:string",
+  "ph:group_rev:number",
+  "ph:hang_share:percent",
+  "ph:item_qty:number",
+  "ph:item_rev_syn:number",
+  "ph:new_share:percent",
+  "ph:pay:number",
+  "ph:pay_avg:number",
+  "ph:phone_avg_price:number",
+  "ph:phone_qty:number",
+  "ph:top_dong:list",
+  "ph:tradein:number",
+  "ph:tradein_share:percent",
   "q:revenue:value:nofilter:number",
   "rep:avg_ticket:number",
   "rep:avg_weekday:number",
@@ -38,12 +63,116 @@
    "correct": 3,
    "wrong": 0
   },
+  "pb:bh_back:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:bh_rate:percent": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:bh_top_dong:string": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:bh_visits:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:debt_cust:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:debt_total:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:gop_due_count:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:gop_left:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:gop_left_cust:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:gop_overdue:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "pb:gop_overdue_cust:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "ph:dong_qty:number": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "ph:group_best:string": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "ph:group_rev:number": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "ph:hang_share:percent": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "ph:item_qty:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "ph:item_rev_syn:number": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "ph:new_share:percent": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "ph:pay:number": {
+   "correct": 4,
+   "wrong": 0
+  },
+  "ph:pay_avg:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "ph:phone_avg_price:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "ph:phone_qty:number": {
+   "correct": 5,
+   "wrong": 0
+  },
+  "ph:top_dong:list": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "ph:tradein:number": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "ph:tradein_share:percent": {
+   "correct": 3,
+   "wrong": 0
+  },
+  "q:orders:value:nofilter:number": {
+   "correct": 2,
+   "wrong": 0
+  },
   "q:revenue:value:item:number": {
    "correct": 1,
    "wrong": 0
   },
   "q:revenue:value:nofilter:number": {
-   "correct": 5,
+   "correct": 7,
    "wrong": 0
   },
   "rep:avg_ticket:number": {

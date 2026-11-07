@@ -177,6 +177,11 @@ _WALKIN = {"khach le", "le", "kl", "k l", "khach vang lai", "vang lai", "khach",
 # whitespace, brackets, dashes and dots; digits are kept, so a name differing
 # in a letter or a digit stays a different customer. A name carrying a phone
 # number and one without never merge.
+def _ikey(x):
+    """Item-name key: folded, punctuation and extra spaces removed."""
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", fold(x))).strip()
+
+
 def person_key(name):
     """(letters, digits) key for a customer name; equal keys = one customer."""
     s = fold(name)
@@ -222,7 +227,7 @@ SHIP_TOK = ["đang giao", "dang giao", "đang vận chuyển", "dang van chuyen"
             "sắp giao", "sap giao", "đang chuẩn bị", "chuẩn bị giao", "chuan bi giao"]
 
 _ST_RETURN = re.compile(r"\b(tra hang|tra lai|tra ve|hoan tra|hoan lai|hoan hang|doi tra|"
-                        r"tra 1 phan|tra mot phan|huy hang|return(ed)?|refund(ed)?)\b|^khach tra( hang| lai)?$|^tra$")
+                        r"tra 1 phan|tra mot phan|huy hang|mang tra|return(ed)?|refund(ed)?)\b|^khach tra( hang| lai)?$|^tra$")
 _ST_CANCEL = re.compile(r"\b(huy|cancel(l?ed)?|khong giao duoc|giao that bai|that bai|"
                         r"fail(ed)?|bom hang|khach bom|khong nhan)\b")
 _ST_SHIP = re.compile(r"\b(dang giao|dang van chuyen|dang gui|dang ship|shipping|delivering|"
@@ -376,7 +381,33 @@ def col(df, role):
     rr = _readme_roles(df)
     if rr is not None:
         cs = [c for c in rr.get(role, []) if c in df.columns]
-        return cs[0] if cs else None
+        return cs[0] if cs else (_stt_order_col(df) if role == "order_id" else None)
+    if role == "order_id":
+        c = _col_vocab(df, role)
+        return c if c is not None else _stt_order_col(df)
+    return _col_vocab(df, role)
+
+
+def _stt_order_col(df):
+    """A hand-kept book numbers its orders in an 'STT' column: the lines of one
+    order repeat the number on consecutive rows. A plain row counter (every
+    value distinct) is not an order number."""
+    if df is None:
+        return None
+    for c in df.columns:
+        if _akey(c) not in ("stt", "sott", "sothutu"):
+            continue
+        v = pd.to_numeric(df[c], errors="coerce")
+        if len(v) < 10 or v.notna().mean() < 0.9:
+            continue
+        same = (v == v.shift()).mean()
+        mono = (v.diff().dropna() >= 0).mean()
+        if same >= 0.1 and mono >= 0.95:
+            return c
+    return None
+
+
+def _col_vocab(df, role):
     names = COL.get(role)
     if not names:
         return None
@@ -685,6 +716,20 @@ class Business:
                 continue
             sig = frozenset(_akey(c) for c in h.columns)
             groups.setdefault(sig, []).append((name, h))
+        # a month sheet whose empty columns were dropped (no trade-in, no
+        # note that month) still belongs with the other month sheets: fold a
+        # group of period sheets into a larger one whose columns it nearly is
+        sigs = sorted(groups, key=len, reverse=True)
+        for small in sigs[::-1]:
+            if small not in groups or not all(_per_of(n) for n, _ in groups[small]):
+                continue
+            for big in sigs:
+                if big is small or big not in groups or len(big) <= len(small):
+                    continue
+                if small <= big and len(big - small) <= 3 and len(small) >= 4 and \
+                        all(_per_of(n) for n, _ in groups[big]):
+                    groups[big].extend(groups.pop(small))
+                    break
         merged = []
         for sig, lst in groups.items():
             base = {_akey(c): c for c in lst[0][1].columns}
@@ -733,6 +778,8 @@ class Business:
     def _build_items(self):
         best = None
         others = []
+        self._item_alias = {}
+        alias_list = None
         for name, h in self._iter_tables():
             if len(h) < 2:
                 continue
@@ -755,6 +802,13 @@ class Business:
             t["sale_price"] = h[c_price].map(parse_num) if c_price else np.nan
             t["group"] = h[c_grp].map(norm) if c_grp else ""
             t = t[t["item"] != ""]
+            # a 'Ghi tắt' list: the abbreviations the book writes for each item
+            c_ab = next((c for c in h.columns if _akey(c) in ("ghitat", "viettat", "tenviettat", "tentat")), None)
+            if c_ab is not None and c_ab != c_name:
+                for ab, full in zip(h[c_ab].map(norm), h[c_name].map(norm)):
+                    if ab and full:
+                        self._item_alias[_ikey(ab)] = full
+                alias_list = t
             others.append(t)
             if enrich_only:
                 continue
@@ -763,6 +817,10 @@ class Business:
             key = (t["item"].nunique(), -len(t))
             if best is None or key > best[2]:
                 best = (name, t, key)
+        if alias_list is not None:
+            # the 'Ghi tắt' sheet of a hand-kept book is the shop's item list
+            # (the sales log itself would otherwise win on its price column)
+            best = ("", alias_list, (alias_list["item"].nunique(), -len(alias_list)))
         if best is not None:
             items = best[1].drop_duplicates(subset=["item"], keep="first").reset_index(drop=True)
             # an item's attributes are often spread over several lists (a
@@ -1386,6 +1444,9 @@ class Business:
         that carries Vietnamese diacritics and is not all upper case."""
         s = s.fillna("").astype(str)
         key = s.map(lambda x: re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", fold(x))).strip())
+        alias = getattr(self, "_item_alias", None) or {}
+        if alias:
+            key = key.map(lambda k: _ikey(alias[k]) if k in alias else k)
         cat = {}
         if len(self.items):
             for nm in self.items["item"]:
@@ -1410,6 +1471,16 @@ class Business:
     def _finish_lines(self, L):
         """Attach order-level attributes from the lines themselves and derive
         revenue / valid / qty_base."""
+        if len(L) == 0:
+            return L
+        # footer rows of a hand-kept sheet ('Tổng cộng', 'Ghi chú: ...') carry
+        # no item, no quantity and no line amount once the order number is
+        # filled down: they are no sale
+        _it = L["item"].fillna("").astype(str).str.strip().str.lower()
+        _blank = _it.isin(["", "nan", "none"])
+        _noq = pd.to_numeric(L["qty"], errors="coerce").isna() if "qty" in L.columns else True
+        _noa = pd.to_numeric(L["line_amount"], errors="coerce").isna() if "line_amount" in L.columns else True
+        L = L[~(_blank & _noq & _noa)].copy()
         if len(L) == 0:
             return L
         c_stat = find_col(L, *COL["status"])

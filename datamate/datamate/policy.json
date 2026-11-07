@@ -17,6 +17,31 @@
   "fee:points:number",
   "fee:ship:number",
   "fee:voucher:number",
+  "pb:bh_back:number",
+  "pb:bh_rate:percent",
+  "pb:bh_top_dong:string",
+  "pb:bh_visits:number",
+  "pb:debt_cust:number",
+  "pb:debt_total:number",
+  "pb:gop_due_count:number",
+  "pb:gop_left:number",
+  "pb:gop_left_cust:number",
+  "pb:gop_overdue:number",
+  "pb:gop_overdue_cust:number",
+  "ph:dong_qty:number",
+  "ph:group_best:string",
+  "ph:group_rev:number",
+  "ph:hang_share:percent",
+  "ph:item_qty:number",
+  "ph:item_rev_syn:number",
+  "ph:new_share:percent",
+  "ph:pay:number",
+  "ph:pay_avg:number",
+  "ph:phone_avg_price:number",
+  "ph:phone_qty:number",
+  "ph:top_dong:list",
+  "ph:tradein:number",
+  "ph:tradein_share:percent",
   "pur:number",
   "q:aov:value:nofilter:number",
   "q:days_over:value:nofilter:number",
@@ -63,6 +88,7 @@
   "rep:warranty_rate:percent",
   "x:best_month:date",
   "x:items_min_orders:number",
+  "x:no_attr:unanswerable",
   "x:no_group:unanswerable",
   "x:top_cust_orders:string",
   "x:trait:unanswerable",
@@ -72,6 +98,31 @@
   "fee:points:number",
   "fee:ship:number",
   "fee:voucher:number",
+  "pb:bh_back:number",
+  "pb:bh_rate:percent",
+  "pb:bh_top_dong:string",
+  "pb:bh_visits:number",
+  "pb:debt_cust:number",
+  "pb:debt_total:number",
+  "pb:gop_due_count:number",
+  "pb:gop_left:number",
+  "pb:gop_left_cust:number",
+  "pb:gop_overdue:number",
+  "pb:gop_overdue_cust:number",
+  "ph:dong_qty:number",
+  "ph:group_best:string",
+  "ph:group_rev:number",
+  "ph:hang_share:percent",
+  "ph:item_qty:number",
+  "ph:item_rev_syn:number",
+  "ph:new_share:percent",
+  "ph:pay:number",
+  "ph:pay_avg:number",
+  "ph:phone_avg_price:number",
+  "ph:phone_qty:number",
+  "ph:top_dong:list",
+  "ph:tradein:number",
+  "ph:tradein_share:percent",
   "rep:avg_ticket:number",
   "rep:avg_weekday:number",
   "rep:commission:number",
@@ -215,7 +266,7 @@
   },
   "e:qty_of_item:number": {
    "correct": 2,
-   "wrong": 84
+   "wrong": 83
   },
   "e:rev_diff:number": {
    "correct": 0,
@@ -227,7 +278,7 @@
   },
   "e:revenue:number": {
    "correct": 7,
-   "wrong": 160
+   "wrong": 157
   },
   "e:revenue_by_ingredient:unanswerable": {
    "correct": 1,
@@ -323,7 +374,7 @@
   },
   "q:qty:value:item:number": {
    "correct": 132,
-   "wrong": 5
+   "wrong": 6
   },
   "q:qty:value:nofilter:number": {
    "correct": 21,
@@ -356,10 +407,6 @@
   "q:revenue:share:group:unanswerable": {
    "correct": 2,
    "wrong": 0
-  },
-  "q:revenue:share:nofilter:percent": {
-   "correct": 0,
-   "wrong": 2
   },
   "q:revenue:share:pay:percent": {
    "correct": 5,
@@ -419,7 +466,7 @@
   },
   "q:revenue:value:nofilter:number": {
    "correct": 491,
-   "wrong": 34
+   "wrong": 31
   },
   "q:revenue:value:nofilter:unanswerable": {
    "correct": 4,
@@ -457,6 +504,10 @@
    "correct": 7,
    "wrong": 2
   },
+  "x:no_attr:unanswerable": {
+   "correct": 8,
+   "wrong": 0
+  },
   "x:top_cust_orders:string": {
    "correct": 11,
    "wrong": 0
@@ -470,8 +521,8 @@
    "wrong": 0
   },
   "x:unsold:number": {
-   "correct": 32,
-   "wrong": 2
+   "correct": 34,
+   "wrong": 0
   }
  }
 }

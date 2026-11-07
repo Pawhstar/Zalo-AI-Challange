@@ -216,7 +216,18 @@ def _norm_text(q):
     s = re.sub(r"\b(hqua|hom wa|bua qua|bua hom qua)\b", "hom qua", s)
     s = re.sub(r"\b(trc|truoc|roi|vua roi|vua qua)\b", "truoc", s)
     s = re.sub(r"\bnam ngoai\b", "nam truoc", s)
+    # months listed with the year written once: 'th7, th8, th9/2026',
+    # 'tháng 7, 8 và 9/2026' -> 'thang 7/2026 thang 8/2026 thang 9/2026'
+    s = re.sub(r"\b((?:thang|th|t)\s*\d{1,2}(?:\s+(?:va\s+)?(?:(?:thang|th|t)\s*)?\d{1,2})*)\s+(?:va\s+)?"
+               r"thang\s+(\d{1,2})/((?:19|20)\d\d)\b", _month_list, s)
     return s
+
+
+def _month_list(m):
+    nums = [int(x) for x in re.findall(r"\d{1,2}", m.group(1))] + [int(m.group(2))]
+    if not all(1 <= n <= 12 for n in nums) or any(b <= a for a, b in zip(nums, nums[1:])):
+        return m.group(0)
+    return " ".join(f"thang {n}/{m.group(3)}" for n in nums)
 
 
 def _relative(s, as_of):
@@ -246,7 +257,8 @@ def _relative(s, as_of):
     if re.search(r"\bhom qua\b", s):
         d = T - pd.Timedelta(days=1)
         return Period(d, d), "day"
-    if re.search(r"\bhom nay\b", s):
+    # 'năm nay / tháng này tính tới hôm nay': 'hôm nay' only ends the period
+    if re.search(r"\bhom nay\b", s) and not re.search(r"\b(thang|nam|tuan|quy) nay\b", s):
         return Period(T, T), "day"
     if re.search(r"\btuan (truoc|tr)\b|\btuan roi\b", s):
         ws = week_start(T)
@@ -321,7 +333,9 @@ def _parse_main(s, T):
         until_day = _date(m.group(3), m.group(4), m.group(5), T)
     elif re.search(r"(tinh den|den het|cuoi ngay|toi gio|hien tai|bay gio|hien con|con lai|"
                     r"dang con|con bao nhieu|con no|con ton)", s) \
-            and re.search(r"\b(hom nay|hien tai|bay gio|toi gio|hien con|con)\b", s):
+            and re.search(r"\b(hom nay|hien tai|bay gio|toi gio|hien con|con)\b", s) \
+            and not (re.search(r"\b(thang|nam|tuan|quy) nay\b|\bdau (thang|nam|tuan|quy)\b", s)
+                     and not re.search(r"\b(con|no|ton|thieu|chua)\b", s)):
         until_day = T
     if until_day is not None and re.search(r"\btu\s*(ngay\s*\d|\d|dau|thang|hom|tuan)", s):
         until_day = None                       # 'từ X đến hết Y' is a range, not a status
